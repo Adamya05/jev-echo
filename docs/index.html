@@ -720,23 +720,27 @@ function setMode(m){
 }
 
 seg(); setMode("net"); whySeg(); renderWhy();
-requestAnimationFrame(loop);
+const CAPTURE = new URLSearchParams(location.search).has("capture");
+if (!CAPTURE) requestAnimationFrame(loop);
 
-// Capture mode, for rendering a video frame by frame:
-//   ?capture&t=12000&speed=5&theme=dark&mode=net
-// Freezes the replay at t ms; nothing advances on its own.
-{ const Q = new URLSearchParams(location.search);
-  if (Q.has("capture")) {
-    if (Q.get("theme")) document.documentElement.dataset.theme = Q.get("theme");
-    if (Q.get("mode") === "crash") setMode("crash");
-    speed = +Q.get("speed") || 1; seg();
+// Capture mode, for rendering a video frame by frame (see viz/video.mjs):
+//   ?capture&theme=dark&mode=net      then call __setFrame(ms, speed) per frame.
+if (CAPTURE) {
+  const Q = new URLSearchParams(location.search);
+  if (Q.get("theme")) document.documentElement.dataset.theme = Q.get("theme");
+  if (Q.get("mode") === "crash") setMode("crash");
+  window.__setFrame = (t, spd) => {
+    speed = spd || 1; seg();
     playing = false;
-    clock = Math.min(+Q.get("t") || 0, D.horizon_ms);
+    clock = Math.min(t, D.horizon_ms);
     if (clock >= BEAT) { paused_at_beat = true; setPlay("play"); openStats(); }
-    else setPlay("pause");
+    else { paused_at_beat = false; closeStats(); setPlay("pause"); }
     tick();
-    document.documentElement.dataset.ready = "1";
-  } }
+    return clock;
+  };
+  window.__beat = BEAT;
+  window.__setFrame(0, 1);
+}
 
 /* ---- your turn ---- */
 (function(){
