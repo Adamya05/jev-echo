@@ -1,0 +1,14 @@
+[project]
+name = "jev"
+version = "0.1.0"
+requires-python = ">=3.13"
+dependencies = [
+    "laya-coreml>=0.1.0",
+    "laya-mlx>=0.2.0",
+    "mlx>=0.32.2",
+    "numpy<2.2",
+    "pyobjc-framework-applicationservices>=12.2.2",
+    "pyobjc-framework-cocoa>=12.2.2",
+    "python-dotenv>=1.2.3",
+    "typesafe-sdk>=0.7.1",
+]

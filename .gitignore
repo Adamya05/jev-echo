@@ -1,0 +1,24 @@
+# Secrets -- .env holds a live TypeSafe API key. This file must exist
+# BEFORE `git init`; a key committed once stays in the history.
+.env
+.env.*
+!.env.example
+
+# Python
+.venv/
+.venv-*/
+__pycache__/
+*.py[cod]
+*.egg-info/
+.pytest_cache/
+.ruff_cache/
+
+# Data and artifacts produced by the runs
+results/
+*.npz
+
+# macOS
+.DS_Store
+
+# Tool caches
+.impeccable/*.cache.json

@@ -1,0 +1,658 @@
+<!doctype html>
+<html lang="en">
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Jev and Echo</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Archivo:wght@600;700;800&family=Source+Sans+3:wght@400;600&family=JetBrains+Mono:wght@400;500;700&display=swap">
+
+<style>
+  :root{
+    --ground:#f7f7f4; --surface:#fcfcfb; --sunken:#eaeae4;
+    --ink:#0b0b0b; --ink-soft:#4f4e4a; --ink-faint:#76756e;
+    --rule:#dcdcd4; --rule-firm:#bfbfb6;
+    --cloud:#c94f1d; --local:#1d63b8; --deep:#0f7a52;
+    --snake:#1baf7a; --head:#0f7a52; --food:#eb6834;
+  }
+  @media (prefers-color-scheme:dark){ :root:not([data-theme="light"]){
+    --ground:#121211; --surface:#1a1a19; --sunken:#0d0d0c;
+    --ink:#f7f7f2; --ink-soft:#bdbcb3; --ink-faint:#8d8c84;
+    --rule:#2a2a27; --rule-firm:#3c3c37;
+    --cloud:#f0855a; --local:#69a6f0; --deep:#4fc79a;
+    --snake:#199e70; --head:#56bfb2; --food:#d95926;
+  }}
+  :root[data-theme="dark"]{
+    --ground:#121211; --surface:#1a1a19; --sunken:#0d0d0c;
+    --ink:#f7f7f2; --ink-soft:#bdbcb3; --ink-faint:#8d8c84;
+    --rule:#2a2a27; --rule-firm:#3c3c37;
+    --cloud:#f0855a; --local:#69a6f0; --deep:#4fc79a;
+    --snake:#199e70; --head:#56bfb2; --food:#d95926;
+  }
+
+  *{box-sizing:border-box}
+  body{background:var(--ground);color:var(--ink);margin:0;
+       font-family:"Source Sans 3",ui-sans-serif,system-ui,sans-serif;
+       font-size:16px;line-height:1.6;padding-inline:20px;padding-block:28px 88px}
+  .wrap{max-width:1000px;margin:0 auto}
+  h1{font-family:Archivo,sans-serif;font-size:clamp(30px,5.2vw,46px);font-weight:800;
+     letter-spacing:-.03em;line-height:1.06;margin:0;text-wrap:balance}
+  h2{font-family:Archivo,sans-serif;font-size:clamp(21px,2.8vw,27px);font-weight:800;
+     letter-spacing:-.025em;line-height:1.15;margin:0 0 4px;text-wrap:balance}
+  h3{font-family:Archivo,sans-serif;font-size:16px;font-weight:700;margin:0 0 4px}
+  p{margin:10px 0 0;color:var(--ink-soft);max-width:68ch}
+  strong{color:var(--ink);font-weight:600}
+  code{font-family:"JetBrains Mono",monospace;font-size:.88em}
+  ::selection{background:color-mix(in srgb,var(--local) 26%,transparent)}
+  :focus-visible{outline:2px solid var(--local);outline-offset:2px}
+
+  .intro{font-size:17px;color:var(--ink-soft);margin:0 0 16px;max-width:70ch}
+  .intro b{color:var(--ink)}
+
+  /* controls */
+  .bar{display:flex;flex-wrap:wrap;gap:10px 14px;align-items:center;margin-bottom:14px}
+  .seg{display:flex;border:1px solid var(--rule-firm);border-radius:6px;overflow:hidden}
+  .seg button{appearance:none;border:0;background:transparent;color:var(--ink-soft);
+              font:500 13px/1 "JetBrains Mono",monospace;padding:7px 12px;cursor:pointer;
+              border-right:1px solid var(--rule)}
+  .seg button:last-child{border-right:0}
+  .seg button[aria-pressed="true"]{background:var(--ink);color:var(--ground)}
+  .btn{appearance:none;border:1px solid var(--rule-firm);background:transparent;
+       color:var(--ink);border-radius:6px;padding:7px 15px;cursor:pointer;
+       font:500 13px/1 "JetBrains Mono",monospace}
+  .btn:hover{border-color:var(--ink-soft)}
+  .btn.go{background:var(--ink);color:var(--ground);border-color:var(--ink)}
+  .elapsed{margin-left:auto;font:700 15px/1 "JetBrains Mono",monospace;
+           font-variant-numeric:tabular-nums;color:var(--ink-soft)}
+
+  [hidden]{display:none!important}
+  .stage{position:relative}
+  .ovl{position:absolute;inset:-10px;z-index:4;display:flex;justify-content:center;
+       align-items:flex-start;padding:clamp(18px,7vw,64px) 10px 10px;
+       background:color-mix(in srgb,var(--ground) 74%,transparent);backdrop-filter:blur(2px)}
+  .card{position:sticky;top:18px;width:min(660px,100%);background:var(--surface);
+        border:1px solid var(--rule-firm);border-radius:10px;padding:22px 24px 20px;
+        box-shadow:0 14px 34px -14px rgba(0,0,0,.3)}
+  .card h2{margin:0}
+  .res{display:grid;grid-template-columns:repeat(3,1fr);gap:18px;margin-top:18px}
+  .rn{font:700 15px/1.2 Archivo,sans-serif}
+  .rv{font:800 clamp(32px,5vw,44px)/1 Archivo,sans-serif;letter-spacing:-.03em;
+      margin-top:10px;font-variant-numeric:tabular-nums}
+  .rv2{font:700 19px/1 "JetBrains Mono",monospace;margin-top:14px;font-variant-numeric:tabular-nums}
+  .rk{font:500 11px/1.3 "JetBrains Mono",monospace;color:var(--ink-faint);margin-top:5px}
+  .rx{font-size:13.5px;line-height:1.45;color:var(--ink-soft);margin-top:12px}
+  .r.c .rn,.r.c .rv{color:var(--cloud)} .r.l .rn,.r.l .rv{color:var(--local)}
+  .r.d .rn,.r.d .rv{color:var(--deep)}
+  .acts{display:flex;align-items:center;gap:10px;margin-top:22px;padding-top:16px;
+        border-top:1px solid var(--rule)}
+  .acts .spacer{flex:1}
+  .cbtn{appearance:none;height:40px;padding:0 18px;border-radius:8px;cursor:pointer;
+        font:600 15px/1 "Source Sans 3",ui-sans-serif,sans-serif;white-space:nowrap;
+        border:1px solid var(--rule-firm);background:transparent;color:var(--ink);
+        transition:background-color .15s,border-color .15s,color .15s}
+  .cbtn:hover{border-color:var(--ink-soft);background:color-mix(in srgb,var(--ink) 5%,transparent)}
+  .cbtn.primary{background:var(--ink);color:var(--ground);border-color:var(--ink)}
+  .cbtn.primary:hover{background:color-mix(in srgb,var(--ink) 86%,var(--ground))}
+  .cbtn.quiet{border-color:transparent;color:var(--ink-soft);padding:0 12px 0 0}
+  .cbtn.quiet:hover{background:transparent;color:var(--ink);text-decoration:underline;
+        text-underline-offset:4px}
+  @media (prefers-reduced-motion:reduce){ .cbtn{transition:none} }
+  .card .note{margin-top:16px}
+  @media (max-width:560px){
+    .res{grid-template-columns:1fr;gap:14px}
+    .acts{flex-wrap:wrap} .acts .spacer{display:none}
+    .cbtn.primary{order:-1;flex:1 1 100%}
+  }
+
+  /* panels */
+  .grid{display:grid;grid-template-columns:repeat(3,1fr);gap:20px}
+  .panel{display:flex;flex-direction:column;gap:12px}
+  .head{display:flex;align-items:baseline;justify-content:space-between;gap:10px;
+        border-bottom:1px solid var(--rule-firm);padding-bottom:7px}
+  .who{font-family:Archivo,sans-serif;font-weight:700;font-size:16px;letter-spacing:-.015em}
+  .tag{font:500 11px/1 "JetBrains Mono",monospace;color:var(--ink-faint);white-space:nowrap}
+  .board{display:grid;grid-template-columns:repeat(10,1fr);gap:1px;background:var(--sunken);
+         border-radius:5px;padding:5px;aspect-ratio:1}
+  .cell{border-radius:1px}
+  .cell.b{background:var(--snake)} .cell.h{background:var(--head)}
+  .cell.f{background:var(--food);border-radius:50%}
+  .heads{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+  .metric .v{font-family:Archivo,sans-serif;font-weight:800;line-height:1;
+             font-size:clamp(26px,3.6vw,34px);letter-spacing:-.03em;
+             font-variant-numeric:tabular-nums}
+  .metric .k{font:500 11px/1.3 "JetBrains Mono",monospace;color:var(--ink-faint);margin-top:6px}
+  .cloud .v{color:var(--cloud)} .local .v{color:var(--local)} .deep .v{color:var(--deep)}
+  .sub{font:400 12.5px/1.7 "JetBrains Mono",monospace;font-variant-numeric:tabular-nums;
+       color:var(--ink-faint);border-top:1px solid var(--rule);padding-top:8px;min-height:2.6em}
+  .sub b{color:var(--ink-soft);font-weight:500}
+
+  /* sections */
+  section{margin-top:64px}
+  .lede{font-size:18.5px;color:var(--ink-soft);max-width:64ch;margin-top:14px}
+  .explain{display:grid;grid-template-columns:repeat(3,1fr);gap:26px;margin-top:22px}
+  .explain p{font-size:15px;margin:0;max-width:none}
+  .note{font-size:14px;color:var(--ink-faint);margin-top:10px}
+
+  /* tables */
+  .scroll{overflow-x:auto;margin-top:16px}
+  table{border-collapse:collapse;width:100%;font-size:14.5px}
+  caption{text-align:left;font:500 12px/1.5 "JetBrains Mono",monospace;
+          color:var(--ink-faint);padding-bottom:9px}
+  th,td{padding:10px 0 10px 18px;border-bottom:1px solid var(--rule);vertical-align:baseline}
+  th:first-child,td:first-child{padding-left:0}
+  th{font:500 11px/1.2 "JetBrains Mono",monospace;color:var(--ink-faint);
+     letter-spacing:.05em;text-transform:uppercase;text-align:left}
+  td{color:var(--ink-soft)}
+  td:first-child{font-family:Archivo,sans-serif;font-weight:700;color:var(--ink)}
+  .nums th:not(:first-child),.nums td:not(:first-child){text-align:right}
+  .nums td:not(:first-child){font-family:"JetBrains Mono",monospace;font-variant-numeric:tabular-nums}
+  tr.c td:first-child{color:var(--cloud)} tr.l td:first-child{color:var(--local)}
+  tr.d td:first-child{color:var(--deep)}
+  td.best{color:var(--ink);font-weight:700}
+
+  /* breaks + steps */
+  ol.steps{list-style:none;counter-reset:s;padding:0;margin:22px 0 0;display:grid;gap:22px}
+  ol.steps li{counter-increment:s;display:grid;grid-template-columns:32px 1fr;gap:4px 12px}
+  ol.steps li::before{content:counter(s);font:700 15px/1.5 Archivo,sans-serif;color:var(--ink-faint)}
+  ol.steps p{margin:0;grid-column:2}
+  pre{grid-column:2;margin:8px 0 0;background:var(--sunken);border-radius:6px;
+      padding:11px 14px;overflow-x:auto;font:400 13px/1.5 "JetBrains Mono",monospace;color:var(--ink)}
+
+  .claims{display:grid;grid-template-columns:1fr 1fr;gap:24px;margin-top:20px}
+  .claim{display:flex;flex-direction:column;gap:6px}
+  .big{font:800 clamp(44px,8vw,76px)/.95 Archivo,sans-serif;letter-spacing:-.04em;
+       font-variant-numeric:tabular-nums}
+  .big.l{color:var(--local)} .big.d{color:var(--deep)}
+  .what{font-size:17px;color:var(--ink-soft)}
+  table.compact{max-width:560px}
+  table.compact caption{padding-top:18px}
+  .rh{margin-top:34px}
+  .reading{list-style:none;padding:0;margin:10px 0 0;display:grid;gap:10px;max-width:70ch}
+  .reading li{display:flex;flex-wrap:wrap;gap:2px 10px;align-items:baseline}
+  .reading a{color:var(--ink);text-underline-offset:3px;text-decoration-color:var(--rule-firm)}
+  .reading a:hover{text-decoration-color:var(--ink)}
+  .reading span{font-size:14px;color:var(--ink-faint)}
+  .playwrap{display:grid;grid-template-columns:minmax(0,380px) 1fr;gap:28px;
+            align-items:start;margin-top:20px}
+  .pboard{touch-action:none;outline:none;cursor:pointer}
+  .pboard:focus-visible{box-shadow:0 0 0 2px var(--local)}
+  .pboard.dead{opacity:.55}
+  .pside{display:flex;flex-direction:column;gap:18px}
+  .pside .bar{margin:0}
+  .you .v{color:var(--ink)}
+  .pmsg{font-size:17px;color:var(--ink);margin:0;min-height:1.6em;max-width:52ch}
+  .pmsg b{font-weight:700}
+  table.board-scores{max-width:320px;font-size:15px}
+  table.board-scores td:last-child{text-align:right;font-family:"JetBrains Mono",monospace;
+    font-variant-numeric:tabular-nums}
+  tr.you-row td{color:var(--ink);font-weight:700}
+  tr.you-row td:first-child{color:var(--ink)}
+  footer{margin-top:64px;padding-top:16px;border-top:1px solid var(--rule);
+         font-size:13.5px;color:var(--ink-faint)}
+  @media (max-width:700px){ .grid,.explain,.claims,.playwrap{grid-template-columns:1fr} }
+</style>
+
+<div class="wrap">
+
+<p class="intro"><b>Jev</b> runs in the cloud. <b>Echo</b> is a small copy of it running on a laptop. Same starting board, same clock.</p>
+
+<div class="bar">
+  <div class="seg" id="segSpeed" role="group" aria-label="playback speed"></div>
+  <button class="btn" id="btnPlay">pause</button>
+  <button class="btn" id="btnRestart">restart</button>
+  <span class="elapsed"><span id="clock">0.0</span>s elapsed</span>
+</div>
+
+<div class="stage" id="stage">
+  <div class="grid" id="row"></div>
+  <div class="ovl" id="ovl" hidden>
+    <div class="card" role="region" aria-labelledby="ovlH">
+      <h2 id="ovlH">Final scores</h2>
+      <div class="res" id="res"></div>
+      <div class="acts">
+        <button class="cbtn quiet" id="ovlClose">Close</button>
+        <span class="spacer"></span>
+        <button class="cbtn" id="ovlReplay">Replay</button>
+        <button class="cbtn primary" id="ovlGo">Keep watching Echo</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<section>
+  <h1 id="h1"></h1>
+  <p class="lede">Echo works on the same inputs as Jev, and learnt from Jev's outputs
+    on different boards.</p>
+  <div class="scroll">
+    <table class="nums">
+      <caption id="tcap"></caption>
+      <thead><tr><th>player</th><th>games</th><th>avg score</th><th>best</th>
+        <th>moves / s</th><th>pellets</th></tr></thead>
+      <tbody id="tbody"></tbody>
+    </table>
+  </div>
+  <div class="explain">
+    <div><h3>Jev</h3>
+      <p>A frontier cloud model. Every move is an API call, about a fifth of a second.</p></div>
+    <div><h3>Echo</h3>
+      <p>A small network trained on Jev's answers, running on the laptop. A game takes
+        hundredths of a second, then it starts another.</p></div>
+    <div><h3>Echo + search</h3>
+      <p>Echo slowed to Jev's pace, using the spare time to play each option forward
+        before it moves.</p></div>
+  </div>
+</section>
+
+<section id="play">
+  <h2>Your turn</h2>
+  <p>Same starting board, same food. Arrow keys or WASD, or swipe on a phone.</p>
+  <div class="playwrap">
+    <div class="board pboard" id="pboard" tabindex="0" role="application"
+         aria-label="Your Snake board. Use the arrow keys to steer."></div>
+    <div class="pside">
+      <div class="bar">
+        <div class="seg" id="segPace" role="group" aria-label="your pace"></div>
+        <button class="btn go" id="pStart">start</button>
+      </div>
+      <div class="heads you">
+        <div class="metric"><div class="v" id="pScore">0</div><div class="k">your score</div></div>
+        <div class="metric"><div class="v" id="pMoves">0</div><div class="k">moves</div></div>
+      </div>
+      <p class="pmsg" id="pMsg"></p>
+      <table class="board-scores">
+        <caption>on this board</caption>
+        <tbody id="pBoardScores"></tbody>
+      </table>
+      <p class="note">Unlike the models, you can crash. They're never offered a move that would.</p>
+    </div>
+  </div>
+</section>
+
+<section>
+  <h2>Why have an expert?</h2>
+  <p>The whole appeal of a System 1 model is speed. Echo can either</p>
+  <div class="claims">
+    <div class="claim"><span class="big l" id="cSpeed"></span>
+      <span class="what">give an equally good move, faster</span></div>
+    <div class="claim"><span class="big d" id="cBetter"></span>
+      <span class="what">take the same time and score higher*</span></div>
+  </div>
+  <div class="scroll">
+    <table class="nums compact">
+      <caption>* averages over ten games each, on the same ten boards</caption>
+      <thead><tr><th>player</th><th>avg score</th><th>against Jev</th></tr></thead>
+      <tbody id="fair"></tbody>
+    </table>
+  </div>
+</section>
+
+<section>
+  <h2>Train your own</h2>
+  <p>Here's how to do it for Snake. Your coding agent of choice will happily help you
+    port it to anything else.</p>
+  <ol class="steps">
+    <li><p>Have Jev label your inputs. For Snake that was 13,686 boards, for $0.27.</p>
+      <pre>uv run python collect_raw.py --games 90</pre></li>
+    <li><p>Train a small network to copy it. About thirty seconds on a laptop.</p>
+      <pre>uv run python train_board.py</pre></li>
+    <li><p>Race them.</p>
+      <pre>uv run python -m sysone.snake.compare --games 10 --max-steps 150 \
+    --configs jev_raw board_student board_budget_197</pre></li>
+  </ol>
+  <p class="note">Search strategy depends heavily on the domain. Snake's rules predict
+    the next board exactly, which is what makes thinking ahead cheap here.</p>
+
+  <h3 class="rh">Further reading</h3>
+  <ul class="reading">
+    <li><a href="https://int8.io/monte-carlo-tree-search-beginners-guide/">Monte Carlo Tree Search, a beginner's guide</a><span>how search picks a move by playing games out</span></li>
+    <li><a href="https://deepmind.google/blog/alphazero-shedding-new-light-on-chess-shogi-and-go/">AlphaZero</a><span>a learned model steering search, the idea behind Echo + search</span></li>
+    <li><a href="https://arxiv.org/abs/1503.02531">Distilling the Knowledge in a Neural Network</a><span>training a small model on a big one's answers, which is what Echo is</span></li>
+    <li><a href="http://incompleteideas.net/book/the-book-2nd.html">Reinforcement Learning: An Introduction</a><span>the free textbook, for the whole picture</span></li>
+  </ul>
+</section>
+
+<footer id="foot"></footer>
+</div>
+
+<script>
+/*__CORE__*/
+</script>
+<script>
+const D = /*__DATA__*/;
+const $ = id => document.getElementById(id);
+const PANELS = [
+  {key:"jev",     name:"Jev",           where:"cloud", tone:"cloud", row:"c"},
+  {key:"student", name:"Echo",          where:"local", tone:"local", row:"l"},
+  {key:"search",  name:"Echo + search", where:"local", tone:"deep",  row:"d"},
+];
+const SPEEDS = [1,2,5];
+let speed=1, playing=true, clock=0, last=null, P=[], paused_at_beat=false;
+
+// Pause once both slow players have finished a game, so the comparison can be read.
+const BEAT = Math.max(D.jev[0].t0 + D.jev[0].ms, D.search[0].t0 + D.search[0].ms);
+
+// Steady-state rate across every recorded game; the first carries a cold start.
+const rate = gs => {
+  const m = gs.reduce((x,g)=>x+g.moves,0), t = gs.reduce((x,g)=>x+g.ms,0);
+  return t ? m/(t/1000) : 0;
+};
+const fmtRate = r => r >= 1000 ? Math.round(r).toLocaleString() : r.toFixed(1);
+// One speed per player, from its recorded games, used everywhere on the page.
+const RATE = {jev: rate(D.jev), student: rate(D.student), search: rate(D.search)};
+const fmtMs = r => { const ms = 1000/r;
+  return ms < 1 ? ms.toFixed(2)+" ms" : Math.round(ms)+" ms"; };
+
+function bodySet(f){
+  if(f._s) return f._s;
+  const s=new Set();
+  for(let i=0;i<f.b.length;i+=2) s.add(+f.b.slice(i,i+2));
+  return (f._s=s);
+}
+function tally(gs, at){
+  let done=0,total=0,high=0,moves=0,ms=0;
+  for(const x of gs){
+    if(x.t0+x.ms>at) break;
+    done++; total+=x.score; moves+=x.moves; ms+=x.ms;
+    if(x.score>high) high=x.score;
+  }
+  return {done,total,high,moves,ms};
+}
+
+function build(){
+  const row=$("row"); row.innerHTML=""; P=[];
+  PANELS.forEach(p=>{
+    const gs=D[p.key];
+    const el=document.createElement("div");
+    el.className="panel "+p.tone;
+    el.innerHTML=
+      '<div class="head"><span class="who">'+p.name+'</span>'+
+      '<span class="tag">'+p.where+' · '+fmtRate(RATE[p.key])+' moves/s</span></div>'+
+      '<div class="board" role="img" aria-label="'+p.name+' board"></div>'+
+      '<div class="heads">'+
+        '<div class="metric"><div class="v m-a">0</div><div class="k m-ak">score</div></div>'+
+        '<div class="metric"><div class="v m-b">0</div><div class="k m-bk">moves</div></div>'+
+      '</div><div class="sub m-sub"></div>';
+    const bd=el.querySelector(".board");
+    for(let i=0;i<100;i++){const c=document.createElement("span");c.className="cell";bd.appendChild(c);}
+    row.appendChild(el);
+    P.push({p, cells:[...bd.children], games:gs, fast: rate(gs) > 100,
+      r:{a:el.querySelector(".m-a"), ak:el.querySelector(".m-ak"),
+         b:el.querySelector(".m-b"), bk:el.querySelector(".m-bk"),
+         sub:el.querySelector(".m-sub")}});
+  });
+}
+
+function draw(pan,f){
+  const body=bodySet(f);
+  for(let i=0;i<100;i++){
+    const cl = i===f.h ? "cell h" : i===f.f ? "cell f" : body.has(i) ? "cell b" : "cell";
+    if(pan.cells[i].className!==cl) pan.cells[i].className=cl;
+  }
+}
+
+function tick(){
+  P.forEach(pan=>{
+    const gs=pan.games;
+    let gi=0;
+    while(gi<gs.length-1 && gs[gi+1].t0<=clock) gi++;
+    const g=gs[gi], fr=g.frames, localT=clock-g.t0;
+    let fi=0;
+    while(fi<fr.length-1 && fr[fi+1].t<=localT) fi++;
+    const cur = fr.length ? fr[fi] : {s:0,m:0};
+    if(fr.length) draw(pan,cur);
+    const t=tally(gs,clock);
+
+    if(pan.fast){
+      pan.r.a.textContent  = t.done ? (t.total/t.done).toFixed(1) : cur.s;
+      pan.r.ak.textContent = t.done ? "avg score" : "score";
+      pan.r.b.textContent  = t.done.toLocaleString();
+      pan.r.bk.textContent = t.done===1 ? "game finished" : "games finished";
+      pan.r.sub.innerHTML  = "best <b>"+Math.max(t.high,cur.s)+"</b> · "+
+        (t.total+cur.s).toLocaleString()+" pellets";
+    } else {
+      const over = clock >= g.t0+g.ms;
+      pan.r.a.textContent  = over ? g.score : cur.s;
+      pan.r.ak.textContent = over ? "final score" : "score";
+      pan.r.b.textContent  = over ? g.moves : cur.m;
+      pan.r.bk.textContent = "moves";
+      pan.r.sub.innerHTML  = over
+        ? "game over · <b>"+(g.ms/1000).toFixed(0)+"s</b>"
+        : "playing";
+    }
+  });
+  $("clock").textContent=(clock/1000).toFixed(1);
+  renderTable();
+  return clock >= D.horizon_ms;
+}
+
+function renderTable(){
+  const at=Math.min(clock,D.horizon_ms);
+  const rows=PANELS.map(p=>{
+    const gs=D[p.key], t=tally(gs,at);
+    return {p,t,mean:t.done?t.total/t.done:0, rate:RATE[p.key]};
+  });
+  const bestMean=Math.max(...rows.map(r=>r.mean));
+  const bestHigh=Math.max(...rows.map(r=>r.t.high));
+  $("tcap").textContent = "live, at "+(at/1000).toFixed(1)+
+    "s · Jev and Echo + search play one game each; Echo keeps going";
+  $("tbody").innerHTML=rows.map(r=>
+    '<tr class="'+r.p.row+'"><td>'+r.p.name+'</td>'+
+    '<td>'+r.t.done.toLocaleString()+'</td>'+
+    '<td'+(r.t.done&&r.mean===bestMean?' class="best"':'')+'>'+(r.t.done?r.mean.toFixed(1):"–")+'</td>'+
+    '<td'+(r.t.high&&r.t.high===bestHigh?' class="best"':'')+'>'+(r.t.done?r.t.high:"–")+'</td>'+
+    '<td>'+fmtRate(r.rate)+'</td>'+
+    '<td>'+r.t.total.toLocaleString()+'</td></tr>').join("");
+}
+
+function seg(){
+  const el=$("segSpeed"); el.innerHTML="";
+  SPEEDS.forEach(v=>{
+    const b=document.createElement("button"); b.type="button";
+    b.textContent=v+"×"; b.setAttribute("aria-pressed",String(speed===v));
+    b.onclick=()=>{speed=v;seg();}; el.appendChild(b);
+  });
+}
+function setPlay(label, go){ const b=$("btnPlay"); b.textContent=label; b.classList.toggle("go",!!go); }
+function reset(){ clock=0; last=null; paused_at_beat=false; closeStats(); }
+function openStats(){ $("ovl").hidden=false; }
+function closeStats(){ $("ovl").hidden=true; }
+
+$("btnPlay").onclick=()=>{
+  if(clock>=D.horizon_ms) reset();
+  playing=!playing; setPlay(playing?"pause":"play");
+};
+$("btnRestart").onclick=()=>{ reset(); playing=true; setPlay("pause"); tick(); };
+$("ovlGo").onclick=()=>{ closeStats(); playing=true; setPlay("pause"); };
+$("ovlReplay").onclick=()=>{ reset(); playing=true; setPlay("pause"); tick(); };
+$("ovlClose").onclick=()=>{ closeStats(); setPlay("play"); $("btnPlay").focus(); };
+document.addEventListener("keydown",e=>{
+  if(e.key==="Escape" && !$("ovl").hidden){ closeStats(); setPlay("play"); $("btnPlay").focus(); }
+});
+
+function loop(ts){
+  if(last===null) last=ts;
+  const dt=ts-last; last=ts;
+  if(playing){
+    const before=clock;
+    clock+=dt*speed;
+    if(!paused_at_beat && before<BEAT && clock>=BEAT){
+      clock=BEAT; paused_at_beat=true; playing=false; setPlay("play"); tick(); openStats();
+    }
+    if(tick()){ clock=D.horizon_ms; tick(); playing=false; setPlay("replay"); }
+  }
+  requestAnimationFrame(loop);
+}
+
+/* ---- static text from the data ---- */
+const jevGame = D.jev[0].ms;
+const echoAtJev = tally(D.student, jevGame);
+const J = tally(D.jev, BEAT), E = tally(D.student, BEAT), S = tally(D.search, BEAT);
+const F = D.fair;
+
+$("h1").textContent = "Jev plays one game. Echo plays "+echoAtJev.done.toLocaleString()+".";
+const searchWins = Math.abs(F.pair_search.d) > 2*F.pair_search.se && F.pair_search.d > 0;
+
+const rateOf = gs => { const t=gs.reduce((x,g)=>x+g.ms,0);
+  return gs.reduce((x,g)=>x+g.moves,0)/(t/1000); };
+const res = [
+  {cls:"c", name:"Jev", v:D.jev[0].score, k:"score", r:RATE.jev,
+   x:"1 game"},
+  {cls:"l", name:"Echo", v:(E.total/E.done).toFixed(1), k:"average score",
+   r:RATE.student,
+   x:echoAtJev.done.toLocaleString()+" games in the time Jev played one"},
+  {cls:"d", name:"Echo + search", v:D.search[0].score, k:"score", r:RATE.search,
+   x: Math.abs(RATE.search/RATE.jev-1) < 0.1 ? "1 game, at Jev's pace"
+      : "1 game, at "+fmtRate(RATE.search)+" moves/s"},
+];
+$("res").innerHTML = res.map(o=>
+  '<div class="r '+o.cls+'"><div class="rn">'+o.name+'</div>'+
+  '<div class="rv">'+o.v+'</div><div class="rk">'+o.k+'</div>'+
+  '<div class="rv2">'+fmtRate(o.r)+'</div><div class="rk">moves / s</div>'+
+  '<div class="rx">'+o.x+'</div></div>').join("");
+
+// Headline claims, from the ten-game runs.
+const speedX = Number((F.jev.ms / F.echo.ms).toPrecision(2));
+const betterPct = Math.round((F.search.mean / F.jev.mean - 1) * 100);
+$("cSpeed").textContent = speedX.toLocaleString()+"×";
+$("cBetter").textContent = (betterPct>=0?"+":"")+betterPct+"%";
+const n = p => p.w+p.l+p.t;
+const vsJev = (p, mean) => Math.abs(p.d) > 2*p.se
+  ? (p.d>0?"+":"")+Math.round((mean/F.jev.mean-1)*100)+"% · won "+p.w+" of "+n(p)
+  : "no clear difference";
+$("fair").innerHTML =
+  '<tr class="c"><td>Jev</td><td>'+F.jev.mean+'</td><td>—</td></tr>'+
+  '<tr class="l"><td>Echo</td><td>'+F.echo.mean+'</td><td>'+vsJev(F.pair_echo,F.echo.mean)+'</td></tr>'+
+  '<tr class="d"><td>Echo + search</td><td>'+F.search.mean.toFixed(1)+'</td><td>'+
+    vsJev(F.pair_search,F.search.mean)+'</td></tr>';
+$("foot").textContent =
+  "The replay starts all three on the same board. Ten-game figures use boards 0–9, up to "+
+  "150 moves each. Jev is typesafe/jev-1.13 via OpenRouter; Echo runs on an Apple M4 CPU.";
+
+build(); seg(); tick();
+requestAnimationFrame(loop);
+
+/* ---- your turn ---- */
+(function(){
+  const SEED = 0, CAP = 600;
+  const PACES = [
+    {label:"3 / s", rate:3},
+    {label:"Jev's pace", rate:RATE.jev},
+    {label:"8 / s", rate:8},
+  ];
+  let pace = PACES[1], game = null, timer = null, queue = [], running = false;
+  const cells = [];
+  const bd = $("pboard");
+  for (let i=0;i<100;i++){ const c=document.createElement("span"); c.className="cell"; bd.appendChild(c); cells.push(c); }
+
+  const others = [
+    {name:"Jev", score:D.jev[0].score, cls:"c"},
+    {name:"Echo", score:D.student[0].score, cls:"l"},
+    {name:"Echo + search", score:D.search[0].score, cls:"d"},
+  ];
+  function scoreboard(mine){
+    const rows = others.map(o=>({...o})).concat(mine===null ? [] : [{name:"You", score:mine, cls:"you-row"}]);
+    rows.sort((a,b)=>b.score-a.score);
+    $("pBoardScores").innerHTML = rows.map(o=>
+      '<tr class="'+o.cls+'"><td>'+o.name+'</td><td>'+o.score+'</td></tr>').join("");
+  }
+
+  function paint(){
+    const body = new Set(game.body.map(([x,y])=>y*10+x));
+    const head = game.body[0][1]*10+game.body[0][0];
+    const food = game.food[1]*10+game.food[0];
+    for (let i=0;i<100;i++){
+      const cl = i===head ? "cell h" : i===food ? "cell f" : body.has(i) ? "cell b" : "cell";
+      if (cells[i].className!==cl) cells[i].className=cl;
+    }
+    $("pScore").textContent = game.score;
+    $("pMoves").textContent = game.steps;
+  }
+
+  function reset(){
+    clearTimeout(timer); running=false; queue=[];
+    game = SnakeGame(SEED); bd.classList.remove("dead");
+    paint(); scoreboard(null);
+    $("pMsg").textContent = "";
+    $("pStart").textContent = "start";
+  }
+
+  function boxedIn(){
+    return ["UP","DOWN","LEFT","RIGHT"].every(m=>{
+      if (m===OPP[game.direction]) return true;
+      const [dx,dy]=DIRS[m], [hx,hy]=game.body[0], n=[hx+dx,hy+dy];
+      return n[0]<0||n[0]>=10||n[1]<0||n[1]>=10||
+             game.body.slice(0,-1).some(b=>b[0]===n[0]&&b[1]===n[1]);
+    });
+  }
+
+  function finish(why){
+    running=false; clearTimeout(timer); bd.classList.add("dead");
+    const s = game.score, j = D.jev[0].score;
+    const verdict = s > Math.max(...others.map(o=>o.score)) ? "You beat all three."
+      : s > j ? "You beat Jev." : s === j ? "You tied Jev." : "Jev wins this one.";
+    const x = Math.round(RATE.student / pace.rate);
+    $("pMsg").innerHTML = "<b>"+why+" "+verdict+"</b> You played at "+fmtRate(pace.rate)+
+      " moves/s. Echo plays at "+fmtRate(RATE.student)+", about "+x.toLocaleString()+
+      " times faster than you.";
+    scoreboard(s);
+    $("pStart").textContent = "play again";
+  }
+
+  function stepOnce(){
+    if (boxedIn()) return finish("Boxed in.");
+    game.step(queue.length ? queue.shift() : game.direction);
+    if (!game.alive) { paint(); return finish("Crashed."); }
+    paint();
+    if (game.steps >= CAP) return finish("Out of moves.");
+    timer = setTimeout(stepOnce, 1000/pace.rate);
+  }
+
+  function start(){
+    if (running) return;
+    if (!game.alive || game.steps) reset();
+    running=true; $("pStart").textContent="playing";
+    bd.focus({preventScroll:true});
+    timer = setTimeout(stepOnce, 1000/pace.rate);
+  }
+
+  function steer(dir){
+    const last = queue.length ? queue[queue.length-1] : game.direction;
+    if (dir===last || dir===OPP[last] || queue.length>=2) return;
+    queue.push(dir);
+  }
+
+  const KEYS = {ArrowUp:"UP",ArrowDown:"DOWN",ArrowLeft:"LEFT",ArrowRight:"RIGHT",
+                w:"UP",s:"DOWN",a:"LEFT",d:"RIGHT",W:"UP",S:"DOWN",A:"LEFT",D:"RIGHT"};
+  document.addEventListener("keydown", e=>{
+    const dir = KEYS[e.key];
+    const inGame = running || document.activeElement===bd;
+    if (!dir || !inGame) return;
+    e.preventDefault();
+    if (!running) start();
+    steer(dir);
+  });
+
+  let t0=null;
+  bd.addEventListener("touchstart", e=>{ const t=e.touches[0]; t0=[t.clientX,t.clientY]; }, {passive:true});
+  bd.addEventListener("touchend", e=>{
+    if (!t0) return;
+    const t=e.changedTouches[0], dx=t.clientX-t0[0], dy=t.clientY-t0[1]; t0=null;
+    if (Math.max(Math.abs(dx),Math.abs(dy)) < 18) { if(!running) start(); return; }
+    if (!running) start();
+    steer(Math.abs(dx)>Math.abs(dy) ? (dx>0?"RIGHT":"LEFT") : (dy>0?"DOWN":"UP"));
+  });
+  bd.addEventListener("click", ()=>{ if(!running) start(); });
+
+  function paceSeg(){
+    const el=$("segPace"); el.innerHTML="";
+    PACES.forEach(p=>{
+      const b=document.createElement("button"); b.type="button"; b.textContent=p.label;
+      b.setAttribute("aria-pressed", String(p===pace));
+      b.onclick=()=>{ pace=p; paceSeg(); if(!running) reset(); };
+      el.appendChild(b);
+    });
+  }
+  $("pStart").onclick = start;
+  paceSeg(); reset();
+})();
+</script>
