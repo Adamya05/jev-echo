@@ -186,7 +186,11 @@
 
   .charts{display:grid;grid-template-columns:1fr 1fr;gap:32px;margin-top:24px}
   .charts figure{margin:0}
-  .charts h3{margin:0 0 6px}
+  .charts h3{margin:0 0 6px;text-align:center;padding-left:6%}
+  @media (max-width:700px){ .charts h3{text-align:left;padding-left:0} }
+  .figs{display:flex;flex-wrap:wrap;gap:12px 48px;margin-top:18px;
+        font:800 clamp(36px,6vw,60px)/1 Archivo,sans-serif;letter-spacing:-.035em}
+  .figs .l{color:var(--local)} .figs .d{color:var(--deep)}
   .charts svg{display:block;width:100%;height:auto;overflow:visible}
   .charts .gl{stroke:var(--rule);stroke-width:1}
   .charts .tk{font:400 11.5px "JetBrains Mono",monospace;fill:var(--ink-faint)}
@@ -301,8 +305,10 @@
 
 <section>
   <h2>What the speed buys you</h2>
-  <p>The aim of System 1 is fast decisions. Echo can use that speed two ways: make
-    roughly the same call about 1,000× faster, or spend the same time looking ahead.</p>
+  <div class="figs">
+    <div class="l"><span id="figSpeed"></span> faster</div>
+    <div class="d"><span id="figBetter"></span> better</div>
+  </div>
   <div class="charts">
     <figure><h3>Safety net on</h3><div id="chartNet"></div></figure>
     <figure><h3>Safety net off</h3><div id="chartCrash"></div></figure>
@@ -683,6 +689,10 @@ function chart(F){
   return '<svg viewBox="0 0 '+W+' '+H+'" role="img" aria-label="'+alt+'">'+g+'</svg>';
 }
 function renderWhy(){
+  // The headline figures use the harder case: safety net off.
+  { const F = ALL.crash.fair;
+    $("figSpeed").textContent = Number((F.jev.ms/F.echo.ms).toPrecision(2)).toLocaleString()+"×";
+    $("figBetter").textContent = Math.round((F.search.mean/F.jev.mean-1)*100)+"%"; }
   $("chartNet").innerHTML = chart(ALL.net.fair);
   $("chartCrash").innerHTML = chart(ALL.crash.fair);
 }
