@@ -62,6 +62,7 @@
        font:500 13px/1 "JetBrains Mono",monospace}
   .btn:hover{border-color:var(--ink-soft)}
   .btn.go{background:var(--ink);color:var(--ground);border-color:var(--ink)}
+  .bar .lbl{font:500 12px/1 "JetBrains Mono",monospace;color:var(--ink-faint);margin-right:-6px}
   .elapsed{margin-left:auto;font:700 15px/1 "JetBrains Mono",monospace;
            font-variant-numeric:tabular-nums;color:var(--ink-soft)}
 
@@ -195,6 +196,8 @@
 <div class="wrap">
 
 <div class="bar">
+  <span class="lbl" id="lblMode">Safety net</span>
+  <div class="seg" id="segMode" role="group" aria-labelledby="lblMode"></div>
   <div class="seg" id="segSpeed" role="group" aria-label="playback speed"></div>
   <button class="btn" id="btnPlay">pause</button>
   <button class="btn" id="btnRestart">restart</button>
@@ -288,16 +291,16 @@
   <p>Here's how to do it for Snake. Your coding agent of choice will happily help you
     port it to anything else.</p>
   <ol class="steps">
-    <li><p>Have Jev label your inputs. For Snake that was 14,391 boards, for $0.29.</p>
-      <pre>SNAKE_ALLOW_CRASH=1 uv run python collect_raw.py --games 90 \
-    --out results/dataset_board_crash.npz</pre></li>
+    <li><p>Have Jev label your inputs. For Snake that was 13,686 boards, for $0.27.</p>
+      <pre>uv run python collect_raw.py --games 90</pre></li>
     <li><p>Train a small network to copy it. About thirty seconds on a laptop.</p>
-      <pre>uv run python train_board.py --data results/dataset_board_crash.npz \
-    --out results/student_board_crash.npz</pre></li>
+      <pre>uv run python train_board.py</pre></li>
     <li><p>Race them.</p>
-      <pre>SNAKE_ALLOW_CRASH=1 uv run python -m sysone.snake.compare --games 10 \
-    --max-steps 150 --configs jev_raw board_student board_budget_181</pre></li>
+      <pre>uv run python -m sysone.snake.compare --games 10 --max-steps 2000 \
+    --configs jev_raw board_student board_budget_197</pre></li>
   </ol>
+  <p class="note">For the version with the safety net off, run the same steps with
+    <code>SNAKE_ALLOW_CRASH=1</code> in front.</p>
   <p class="note">Search strategy depends heavily on the domain. Snake's rules predict
     the next board exactly, which is what makes thinking ahead cheap here.</p>
 
@@ -317,7 +320,8 @@
 /*__CORE__*/
 </script>
 <script>
-const D = /*__DATA__*/;
+const ALL = /*__DATA__*/;
+let MODE = "net", D = ALL.net;
 const $ = id => document.getElementById(id);
 const PANELS = [
   {key:"jev",     name:"Jev",           where:"cloud", tone:"cloud", row:"c"},
@@ -328,7 +332,7 @@ const SPEEDS = [1,2,5];
 let speed=1, playing=true, clock=0, last=null, P=[], paused_at_beat=false;
 
 // Pause once both slow players have finished a game, so the comparison can be read.
-const BEAT = Math.max(D.jev[0].t0 + D.jev[0].ms, D.search[0].t0 + D.search[0].ms);
+let BEAT = 0;
 
 // Steady-state rate across every recorded game; the first carries a cold start.
 const rate = gs => {
@@ -337,7 +341,9 @@ const rate = gs => {
 };
 const fmtRate = r => r >= 1000 ? Math.round(r).toLocaleString() : r.toFixed(1);
 // One speed per player, from its recorded games, used everywhere on the page.
-const RATE = {jev: rate(D.jev), student: rate(D.student), search: rate(D.search)};
+const ratesOf = d => ({jev: rate(d.jev), student: rate(d.student), search: rate(d.search)});
+let RATE = null;
+const RATE_NET = ratesOf(ALL.net);
 const fmtMs = r => { const ms = 1000/r;
   return ms < 1 ? ms.toFixed(2)+" ms" : Math.round(ms)+" ms"; };
 
@@ -482,61 +488,82 @@ function loop(ts){
   requestAnimationFrame(loop);
 }
 
-/* ---- static text from the data ---- */
-const jevGame = D.jev[0].ms;
-const echoAtJev = tally(D.student, jevGame);
-const J = tally(D.jev, BEAT), E = tally(D.student, BEAT), S = tally(D.search, BEAT);
-const F = D.fair;
+/* ---- text that depends on the mode ---- */
+function renderStatic(){
+  const jevGame = D.jev[0].ms;
+  const echoAtJev = tally(D.student, jevGame);
+  const J = tally(D.jev, BEAT), E = tally(D.student, BEAT), S = tally(D.search, BEAT);
+  const F = D.fair;
 
-$("h1").textContent = "Jev plays one game. Echo plays "+echoAtJev.done.toLocaleString()+".";
-const searchWins = Math.abs(F.pair_search.d) > 2*F.pair_search.se && F.pair_search.d > 0;
+  $("h1").textContent = "Jev plays one game. Echo plays "+echoAtJev.done.toLocaleString()+".";
+  const searchWins = Math.abs(F.pair_search.d) > 2*F.pair_search.se && F.pair_search.d > 0;
 
-const rateOf = gs => { const t=gs.reduce((x,g)=>x+g.ms,0);
-  return gs.reduce((x,g)=>x+g.moves,0)/(t/1000); };
-const res = [
-  {cls:"c", name:"Jev", v:D.jev[0].score, k:"score", r:RATE.jev,
-   x:"1 game"},
-  {cls:"l", name:"Echo", v:(E.total/E.done).toFixed(1), k:"average score",
-   r:RATE.student,
-   x:echoAtJev.done.toLocaleString()+" games in the time Jev played one"},
-  {cls:"d", name:"Echo + search", v:D.search[0].score, k:"score", r:RATE.search,
-   x: Math.abs(RATE.search/RATE.jev-1) < 0.1 ? "1 game, at Jev's pace"
-      : "1 game, at "+fmtRate(RATE.search)+" moves/s"},
-];
-$("res").innerHTML = res.map(o=>
-  '<div class="r '+o.cls+'"><div class="rn">'+o.name+'</div>'+
-  '<div class="rv">'+o.v+'</div><div class="rk">'+o.k+'</div>'+
-  '<div class="rv2">'+fmtRate(o.r)+'</div><div class="rk">moves / s</div>'+
-  '<div class="rx">'+o.x+'</div></div>').join("");
+  const rateOf = gs => { const t=gs.reduce((x,g)=>x+g.ms,0);
+    return gs.reduce((x,g)=>x+g.moves,0)/(t/1000); };
+  const res = [
+    {cls:"c", name:"Jev", v:D.jev[0].score, k:"score", r:RATE.jev,
+     x:"1 game"},
+    {cls:"l", name:"Echo", v:(E.total/E.done).toFixed(1), k:"average score",
+     r:RATE.student,
+     x:echoAtJev.done.toLocaleString()+" games in the time Jev played one"},
+    {cls:"d", name:"Echo + search", v:D.search[0].score, k:"score", r:RATE.search,
+     x: Math.abs(RATE.search/RATE.jev-1) < 0.1 ? "1 game, at Jev's pace"
+        : "1 game, at "+fmtRate(RATE.search)+" moves/s"},
+  ];
+  $("res").innerHTML = res.map(o=>
+    '<div class="r '+o.cls+'"><div class="rn">'+o.name+'</div>'+
+    '<div class="rv">'+o.v+'</div><div class="rk">'+o.k+'</div>'+
+    '<div class="rv2">'+fmtRate(o.r)+'</div><div class="rk">moves / s</div>'+
+    '<div class="rx">'+o.x+'</div></div>').join("");
 
-// Explainer paces, from the replay recording.
-{ const last = D.student[D.student.length-1];
-  const gps = D.student.length / ((last.t0 + last.ms) / 1000);
-  $("jevPace").textContent = "About "+Math.round(RATE.jev)+" moves a second.";
-  $("echoPace").textContent = "About "+Number(gps.toPrecision(2)).toLocaleString()+" games a second."; }
+  // Explainer paces, from the replay recording.
+  { const last = D.student[D.student.length-1];
+    const gps = D.student.length / ((last.t0 + last.ms) / 1000);
+    $("jevPace").textContent = "About "+Math.round(RATE.jev)+" moves a second.";
+    $("echoPace").textContent = "About "+Number(gps.toPrecision(2)).toLocaleString()+" games a second."; }
 
-// Headline claims, from the ten-game runs.
-const speedX = Number((F.jev.ms / F.echo.ms).toPrecision(2));
-const betterPct = Math.round((F.search.mean / F.jev.mean - 1) * 100);
-$("cSpeed").textContent = speedX.toLocaleString()+"×";
-{ const p = F.pair_echo, clear = Math.abs(p.d) > 2*p.se;
-  $("cSpeedWhat").textContent = !clear ? "give about as good a move, faster"
-    : p.d < 0 ? "give a slightly weaker move, faster" : "give a better move, faster"; }
-$("cBetter").textContent = (betterPct>=0?"+":"")+betterPct+"%";
-const n = p => p.w+p.l+p.t;
-const vsJev = (p, mean) => Math.abs(p.d) > 2*p.se
-  ? (p.d>0?"+":"")+Math.round((mean/F.jev.mean-1)*100)+"% · won "+p.w+" of "+n(p)
-  : "no clear difference";
-$("fair").innerHTML =
-  '<tr class="c"><td>Jev</td><td>'+F.jev.mean.toFixed(1)+'</td><td>—</td></tr>'+
-  '<tr class="l"><td>Echo</td><td>'+F.echo.mean.toFixed(1)+'</td><td>'+vsJev(F.pair_echo,F.echo.mean)+'</td></tr>'+
-  '<tr class="d"><td>Echo + search</td><td>'+F.search.mean.toFixed(1)+'</td><td>'+
-    vsJev(F.pair_search,F.search.mean)+'</td></tr>';
-$("foot").textContent =
-  "The replay starts all three on the same board. Ten-game figures use boards 0–9, up to "+
-  "150 moves each. Jev is typesafe/jev-1.13 via OpenRouter; Echo runs on an Apple M4 CPU.";
+  // Headline claims, from the ten-game runs.
+  const speedX = Number((F.jev.ms / F.echo.ms).toPrecision(2));
+  const betterPct = Math.round((F.search.mean / F.jev.mean - 1) * 100);
+  $("cSpeed").textContent = speedX.toLocaleString()+"×";
+  { const p = F.pair_echo, clear = Math.abs(p.d) > 2*p.se;
+    $("cSpeedWhat").textContent = !clear ? "give about as good a move, faster"
+      : p.d < 0 ? "give a slightly weaker move, faster" : "give a better move, faster"; }
+  $("cBetter").textContent = (betterPct>=0?"+":"−")+Math.abs(betterPct)+"%";
+  const n = p => p.w+p.l+p.t;
+  const pct = mean => { const v = Math.round((mean/F.jev.mean-1)*100);
+    return (v>0?"+":v<0?"−":"")+Math.abs(v)+"%"; };
+  const vsJev = (p, mean) => Math.abs(p.d) <= 2*p.se ? "no clear difference"
+    : p.d > 0 ? pct(mean)+" · won "+p.w+" of "+n(p)
+    : pct(mean)+" · lost "+p.l+" of "+n(p);
+  $("fair").innerHTML =
+    '<tr class="c"><td>Jev</td><td>'+F.jev.mean.toFixed(1)+'</td><td>—</td></tr>'+
+    '<tr class="l"><td>Echo</td><td>'+F.echo.mean.toFixed(1)+'</td><td>'+vsJev(F.pair_echo,F.echo.mean)+'</td></tr>'+
+    '<tr class="d"><td>Echo + search</td><td>'+F.search.mean.toFixed(1)+'</td><td>'+
+      vsJev(F.pair_search,F.search.mean)+'</td></tr>';
+  $("foot").textContent =
+    "The replay starts all three on the same board. Ten-game figures use boards 0–9, each "+
+    "played to the end. Jev is typesafe/jev-1.13 via OpenRouter; Echo runs on an Apple M4 CPU.";
+}
 
-build(); seg(); tick();
+function modeSeg(){
+  const el=$("segMode"); el.innerHTML="";
+  [["net","on"],["crash","off"]].forEach(([m,label])=>{
+    const b=document.createElement("button"); b.type="button"; b.textContent=label;
+    b.setAttribute("aria-pressed", String(MODE===m));
+    b.onclick=()=>{ if(MODE!==m) setMode(m); };
+    el.appendChild(b);
+  });
+}
+function setMode(m){
+  MODE=m; D=ALL[m];
+  BEAT = Math.max(D.jev[0].t0 + D.jev[0].ms, D.search[0].t0 + D.search[0].ms);
+  RATE = ratesOf(D);
+  build(); renderStatic(); modeSeg();
+  reset(); playing=true; setPlay("pause"); tick();
+}
+
+seg(); setMode("net");
 requestAnimationFrame(loop);
 
 /* ---- your turn ---- */
@@ -544,7 +571,7 @@ requestAnimationFrame(loop);
   const SEED = 0, CAP = 600;
   const PACES = [
     {label:"3 / s", rate:3},
-    {label:"Jev's pace", rate:RATE.jev},
+    {label:"Jev's pace", rate:RATE_NET.jev},
     {label:"8 / s", rate:8},
   ];
   let pace = PACES[1], game = null, timer = null, queue = [], running = false;
@@ -552,10 +579,12 @@ requestAnimationFrame(loop);
   const bd = $("pboard");
   for (let i=0;i<100;i++){ const c=document.createElement("span"); c.className="cell"; bd.appendChild(c); cells.push(c); }
 
+  // Always the safety-net games: the harder bar to clear.
+  const NET = ALL.net;
   const others = [
-    {name:"Jev", score:D.jev[0].score, cls:"c"},
-    {name:"Echo", score:D.student[0].score, cls:"l"},
-    {name:"Echo + search", score:D.search[0].score, cls:"d"},
+    {name:"Jev", score:NET.jev[0].score, cls:"c"},
+    {name:"Echo", score:NET.student[0].score, cls:"l"},
+    {name:"Echo + search", score:NET.search[0].score, cls:"d"},
   ];
   function scoreboard(mine){
     const rows = others.map(o=>({...o})).concat(mine===null ? [] : [{name:"You", score:mine, cls:"you-row"}]);
@@ -595,12 +624,12 @@ requestAnimationFrame(loop);
 
   function finish(why){
     running=false; clearTimeout(timer); bd.classList.add("dead");
-    const s = game.score, j = D.jev[0].score;
+    const s = game.score, j = NET.jev[0].score;
     const verdict = s > Math.max(...others.map(o=>o.score)) ? "You beat all three."
       : s > j ? "You beat Jev." : s === j ? "You tied Jev." : "Jev wins this one.";
-    const x = Math.round(RATE.student / pace.rate);
+    const x = Math.round(RATE_NET.student / pace.rate);
     $("pMsg").innerHTML = "<b>"+why+" "+verdict+"</b> You played at "+fmtRate(pace.rate)+
-      " moves/s. Echo plays at "+fmtRate(RATE.student)+", about "+x.toLocaleString()+
+      " moves/s. Echo plays at "+fmtRate(RATE_NET.student)+", about "+x.toLocaleString()+
       " times faster than you.";
     scoreboard(s);
     $("pStart").textContent = "play again";

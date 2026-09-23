@@ -1,94 +1,69 @@
-"""Pack the marathon recording into the page."""
-import json, os, pathlib
-CRASH = os.environ.get("SNAKE_ALLOW_CRASH") == "1"
-SUFFIX = "_crash" if CRASH else ""
+"""Pack both modes into one page: with the safety net, and without it."""
+import json, pathlib, statistics as st
 
-d = json.loads(pathlib.Path(f"results/marathon{SUFFIX}.json").read_text())
+R = pathlib.Path("results")
+MODES = {
+    "net":   {"replay": R / "marathon.json",       "fair": R / "fair_uncapped.json"},
+    "crash": {"replay": R / "marathon_crash.json", "fair": R / "fair_crash_uncapped.json"},
+}
 
-# The demo pauses when BOTH slow players have finished a game, so the horizon
-# has to clear that moment with room for Echo to keep running afterwards.
-# Jev's game is not always the longer of the two.
-BEAT = max(d["budget_ms"], d["search"][0]["t0"] + d["search"][0]["ms"])
-HORIZON = BEAT * 1.25
-# Jev and Echo + search play exactly one game each and then hold their final
-# board; only Echo keeps playing.
-d["jev"] = d["jev"][:1]
-d["search"] = d["search"][:1]
-d["student"] = [g for g in d["student"] if g["t0"] < HORIZON] or d["student"][:1]
 
-# A student run lasts ~62 ms, which is under four rendered frames at 60 fps.
-# Storing more than that is storing pixels nobody can see.
-KEEP = 3
-for g in d["student"]:
-    fr = g["frames"]
-    if len(fr) > KEEP:
-        step = (len(fr) - 1) / (KEEP - 1)
-        g["frames"] = [fr[round(i * step)] for i in range(KEEP)]
+def pack_replay(d):
+    # The pause comes once both slow players have finished a game; Echo keeps
+    # going a little past it.
+    beat = max(d["jev"][0]["t0"] + d["jev"][0]["ms"], d["search"][0]["t0"] + d["search"][0]["ms"])
+    horizon = beat * 1.25
+    d["jev"], d["search"] = d["jev"][:1], d["search"][:1]
+    d["student"] = [g for g in d["student"] if g["t0"] < horizon] or d["student"][:1]
+    # An Echo game lasts a few milliseconds -- under a rendered frame -- so a
+    # handful of snapshots is all anyone can see.
+    for g in d["student"]:
+        fr = g["frames"]
+        if len(fr) > 3:
+            step = (len(fr) - 1) / 2
+            g["frames"] = [fr[round(i * step)] for i in range(3)]
+    for key in ("jev", "student", "search"):
+        for g in d[key]:
+            for f in g["frames"]:
+                if isinstance(f["b"], list):
+                    f["b"] = "".join(f"{i:02d}" for i in f["b"])
+    d["horizon_ms"] = min(horizon, max(g["t0"] + g["ms"] for k in ("jev", "student", "search") for g in d[k]))
+    return d, beat
 
-# Body cells as a packed 2-char-per-index string rather than a JSON array.
-for key in ("jev", "student", "search"):
-    for g in d[key]:
-        for f in g["frames"]:
-            if isinstance(f["b"], list):
-                f["b"] = "".join(f"{i:02d}" for i in f["b"])
 
-d["horizon_ms"] = min(HORIZON,
-    max(g["t0"] + g["ms"] for k in ("jev", "student", "search") for g in d[k]))
+def pack_fair(rows):
+    by = {}
+    for r in rows:
+        by.setdefault(r["config"], {})[r["seed"]] = r
+    search = next(c for c in by if c.startswith("STUDENT(board)+search"))
+    names = {"JEV(raw)": "jev", "STUDENT(board)": "echo", search: "search"}
+    fair = {}
+    for cfg, key in names.items():
+        sc = [r["score"] for r in by[cfg].values()]
+        fair[key] = {"mean": round(st.mean(sc), 1), "ms": round(st.median(r["ms"] for r in by[cfg].values()), 2)}
+    for key, cfg in (("echo", "STUDENT(board)"), ("search", search)):
+        diff = [by[cfg][s]["score"] - by["JEV(raw)"][s]["score"] for s in sorted(by[cfg])]
+        fair["pair_" + key] = {"d": round(st.mean(diff), 2),
+                               "se": round(st.stdev(diff) / len(diff) ** 0.5, 2),
+                               "w": sum(x > 0 for x in diff), "l": sum(x < 0 for x in diff),
+                               "t": sum(x == 0 for x in diff)}
+    return fair
 
-# Ten-seed comparison: the fair test of score, since one replayed game is
-# one sample. Paired by seed, so board luck cancels out.
-import statistics as st
-if CRASH:
-    # Jev from the first crash run; Echo and Echo + search from the retrained model.
-    rows = [r for r in json.loads(pathlib.Path("results/fair_crash.json").read_text())
-            if r["config"] == "JEV(raw)"]
-    rows += json.loads(pathlib.Path("results/fair_crash_echo.json").read_text())
-else:
-    rows = json.loads(pathlib.Path("results/fair.json").read_text())
-    # Echo + search was re-run with its budget matched to Jev's per-move time.
-    matched = pathlib.Path("results/fair_search197.json")
-    if matched.exists():
-        rows = [r for r in rows if not r["config"].startswith("STUDENT(board)+search")]
-        rows += json.loads(matched.read_text())
-SEARCH = next(r["config"] for r in rows if r["config"].startswith("STUDENT(board)+search"))
-by = {}
-for r in rows:
-    by.setdefault(r["config"], {})[r["seed"]] = r
-names = {"JEV(raw)": "jev", "STUDENT(board)": "echo", SEARCH: "search"}
-fair = {}
-for cfg, key in names.items():
-    sc = [r["score"] for r in by[cfg].values()]
-    fair[key] = {"mean": round(st.mean(sc), 1),
-                 "sem": round(st.pstdev(sc) / len(sc) ** 0.5, 2),
-                 "ms": round(st.median(r["ms"] for r in by[cfg].values()), 2),
-                 "n": len(sc)}
-for key, cfg in (("echo", "STUDENT(board)"), ("search", SEARCH)):
-    seeds = sorted(set(by[cfg]) & set(by["JEV(raw)"]))
-    diff = [by[cfg][s]["score"] - by["JEV(raw)"][s]["score"] for s in seeds]
-    fair["pair_" + key] = {"d": round(st.mean(diff), 2),
-                           "se": round(st.stdev(diff) / len(diff) ** 0.5, 2),
-                           "w": sum(x > 0 for x in diff), "l": sum(x < 0 for x in diff),
-                           "t": sum(x == 0 for x in diff)}
-d["fair"] = fair
+
+ALL = {}
+for mode, src in MODES.items():
+    d, beat = pack_replay(json.loads(src["replay"].read_text()))
+    d["fair"] = pack_fair(json.loads(src["fair"].read_text()))
+    ALL[mode] = d
+    F = d["fair"]
+    print(f"{mode:<6} replay: jev {d['jev'][0]['score']}, search {d['search'][0]['score']}, "
+          f"echo {len(d['student'])} games to {d['horizon_ms']/1000:.0f}s (pause {beat/1000:.1f}s)  |  "
+          f"ten games: jev {F['jev']['mean']} echo {F['echo']['mean']} search {F['search']['mean']}")
 
 tpl = pathlib.Path("viz/marathon_tpl.html").read_text()
-out = tpl.replace("/*__DATA__*/", json.dumps(d, separators=(",", ":")))
+out = tpl.replace("/*__DATA__*/", json.dumps(ALL, separators=(",", ":")))
 out = out.replace("/*__CORE__*/", pathlib.Path("viz/snake_core.js").read_text())
 pathlib.Path("viz/marathon.html").write_text(out)
-site = pathlib.Path("site"); site.mkdir(exist_ok=True)
-(site / "index.html").write_text(out)
-
-at = [g for g in d["student"] if g["t0"] + g["ms"] <= BEAT]
-print(f"jev game        {d['budget_ms']/1000:>6.1f}s   score {d['jev'][0]['score']}")
-print(f"echo+search g1  {(d['search'][0]['t0']+d['search'][0]['ms'])/1000:>6.1f}s   "
-      f"score {d['search'][0]['score']}")
-print(f"beat (pause)    {BEAT/1000:>6.1f}s")
-print(f"echo at beat    {len(at):>6} runs, mean "
-      f"{sum(g['score'] for g in at)/len(at):.1f}, best {max(g['score'] for g in at)}")
-print(f"student recorded {len(d['student']):>4} runs to "
-      f"{(d['student'][-1]['t0']+d['student'][-1]['ms'])/1000:.0f}s")
-print(f"horizon         {d['horizon_ms']/1000:>6.1f}s")
-print(f"page            {len(out)/1024:>6.0f} KB")
-print(f"ten-game: jev {fair['jev']['mean']} ({fair['jev']['ms']} ms)  "
-      f"echo {fair['echo']['mean']}  search {fair['search']['mean']} "
-      f"({fair['search']['ms']} ms)  [{SEARCH}]")
+pathlib.Path("site").mkdir(exist_ok=True)
+pathlib.Path("site/index.html").write_text(out)
+print(f"page {len(out)/1024:.0f} KB")
