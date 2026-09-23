@@ -10,7 +10,7 @@ import { pathToFileURL } from "node:url";
 const OUT = resolve(process.argv[2] || "echo.mp4");
 const CHROME = "/Applications/Google Chrome.app/Contents/MacOS/Google Chrome";
 const PAGE = pathToFileURL(resolve("docs/index.html")).href + "?capture&theme=dark&mode=net";
-const W = 1280, H = 820, DPR = 1.5, FPS = 30;
+const W = 1280, H = 720, DPR = 1.5, FPS = 30;
 const OPEN_S = 4, HOLD_S = 3;              // 1x opening, then 5x, then hold on the card
 
 const frames = mkdtempSync(join(tmpdir(), "echo-frames-"));
@@ -48,8 +48,8 @@ await evaluate("document.fonts.ready.then(() => true)");
 await sleep(300);
 
 const beat = await evaluate("window.__beat");
-// Crop just below the line under the headline.
-const keepH = Math.round(await evaluate("document.querySelector('.lede').getBoundingClientRect().bottom + 20") * DPR / 2) * 2;
+// Crop just below the three boards.
+const keepH = Math.round(await evaluate("document.getElementById('stage').getBoundingClientRect().bottom + 24") * DPR / 2) * 2;
 const fastS = (beat / 1000 - OPEN_S) / 5;
 const plan = [];
 for (let f = 0; f < OPEN_S * FPS; f++) plan.push([f / FPS * 1000, 1]);
