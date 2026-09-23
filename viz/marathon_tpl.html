@@ -194,8 +194,6 @@
 
 <div class="wrap">
 
-<p class="intro"><b>Jev</b> runs in the cloud. <b>Echo</b> is a small copy of it running on a laptop. Same starting board, same clock.</p>
-
 <div class="bar">
   <div class="seg" id="segSpeed" role="group" aria-label="playback speed"></div>
   <button class="btn" id="btnPlay">pause</button>
@@ -233,10 +231,10 @@
   </div>
   <div class="explain">
     <div><h3>Jev</h3>
-      <p>A frontier cloud model. Every move is an API call, about a fifth of a second.</p></div>
+      <p>A frontier cloud model. <span id="jevPace"></span></p></div>
     <div><h3>Echo</h3>
-      <p>A small network trained on Jev's answers, running on the laptop. A game takes
-        hundredths of a second, then it starts another.</p></div>
+      <p>A small network trained on Jev's answers, running on the laptop.
+        <span id="echoPace"></span></p></div>
     <div><h3>Echo + search</h3>
       <p>Echo slowed to Jev's pace, using the spare time to play each option forward
         before it moves.</p></div>
@@ -510,6 +508,12 @@ $("res").innerHTML = res.map(o=>
   '<div class="rv">'+o.v+'</div><div class="rk">'+o.k+'</div>'+
   '<div class="rv2">'+fmtRate(o.r)+'</div><div class="rk">moves / s</div>'+
   '<div class="rx">'+o.x+'</div></div>').join("");
+
+// Explainer paces, from the replay recording.
+{ const last = D.student[D.student.length-1];
+  const gps = D.student.length / ((last.t0 + last.ms) / 1000);
+  $("jevPace").textContent = "About "+Math.round(RATE.jev)+" moves a second.";
+  $("echoPace").textContent = "About "+Number(gps.toPrecision(2)).toLocaleString()+" games a second."; }
 
 // Headline claims, from the ten-game runs.
 const speedX = Number((F.jev.ms / F.echo.ms).toPrecision(2));
