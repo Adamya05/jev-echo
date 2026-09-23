@@ -2,7 +2,20 @@
 <html lang="en">
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>The case for specialised System 1 modules</title>
+<title>Jev and Echo</title>
+<meta name="description" content="A tiny local model trained on Jev's answers plays Snake about as well, ~1,000× faster. Watch them race, then play the same board.">
+<meta property="og:type" content="website">
+<meta property="og:url" content="https://adamya05.github.io/jev-echo/">
+<meta property="og:title" content="Jev and Echo">
+<meta property="og:description" content="A tiny local model trained on Jev's answers plays Snake about as well, ~1,000× faster. Watch them race, then play the same board.">
+<meta property="og:image" content="https://adamya05.github.io/jev-echo/og.png">
+<meta property="og:image:width" content="1200">
+<meta property="og:image:height" content="630">
+<meta property="og:image:alt" content="Final scores: Jev 14 at 4.7 moves a second, Echo 20.4 at 3,943, Echo + search 30 at 5.5.">
+<meta name="twitter:card" content="summary_large_image">
+<meta name="twitter:title" content="Jev and Echo">
+<meta name="twitter:description" content="A tiny local model trained on Jev's answers plays Snake about as well, ~1,000× faster. Watch them race, then play the same board.">
+<meta name="twitter:image" content="https://adamya05.github.io/jev-echo/og.png">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Archivo:wght@600;700;800&family=Source+Sans+3:wght@400;600&family=JetBrains+Mono:wght@400;500;700&display=swap">
@@ -204,6 +217,9 @@
   tr.you-row td:first-child{color:var(--ink)}
   footer{margin-top:64px;padding-top:16px;border-top:1px solid var(--rule);
          font-size:13.5px;color:var(--ink-faint)}
+  footer a, .steps .detail a{color:var(--ink-soft);text-underline-offset:3px;text-decoration-color:var(--rule-firm)}
+  footer a:hover, .steps .detail a:hover{text-decoration-color:currentColor}
+  .steps .detail{color:var(--ink-faint);font-size:14.5px}
   @media (max-width:700px){ .grid,.explain,.claims,.playwrap{grid-template-columns:1fr} }
 </style>
 
@@ -247,12 +263,11 @@
   </div>
   <div class="explain">
     <div><h3>Jev</h3>
-      <p>A frontier cloud model. <span id="jevPace"></span></p></div>
+      <p>A general-purpose System 1 model, running in the cloud.</p></div>
     <div><h3>Echo</h3>
-      <p>A small network trained on Jev's answers, running on the laptop.
-        <span id="echoPace"></span></p></div>
+      <p>An 87 KB network trained on Jev's answers, running on the laptop.</p></div>
     <div><h3>Echo + search</h3>
-      <p>Echo slowed to Jev's pace, using the spare time to play each option forward
+      <p>Echo slowed to Jev's pace and spends the extra time playing each option forward
         before it moves.</p></div>
   </div>
 </section>
@@ -283,23 +298,24 @@
 
 <section>
   <div class="sechead">
-    <h2>The case for specialised System 1 modules</h2>
+    <h2>What the speed buys you</h2>
     <div class="net-ctl">
       <span class="lbl" id="lblWhy">Safety net</span>
       <div class="seg" id="segWhy" role="group" aria-labelledby="lblWhy"></div>
       <span class="info"><button type="button" class="info-btn" aria-label="What is the safety net?" aria-describedby="tipWhy"><svg width="16" height="16" viewBox="0 0 16 16" aria-hidden="true"><circle cx="8" cy="8" r="6.75" fill="none" stroke="currentColor" stroke-width="1.5"/><circle cx="8" cy="5" r="1" fill="currentColor"/><path d="M8 7.4v4.1" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/></svg></button><span role="tooltip" id="tipWhy" class="tip tip-right">On: the models are only ever offered moves that won't crash them. Off: they can pick any direction, so one bad move ends the game.</span></span>
     </div>
   </div>
-  <p>The whole appeal of a System 1 model is speed. Echo can either</p>
+  <p>The aim of System 1 is fast decisions. Echo can use that speed two ways: make
+    roughly the same call about 1,000× faster, or spend the same time looking ahead.</p>
   <div class="claims">
     <div class="claim"><span class="big l" id="cSpeed"></span>
-      <span class="what" id="cSpeedWhat">give about as good a move, faster</span></div>
+      <span class="what" id="cSpeedWhat">about the same move, faster</span></div>
     <div class="claim"><span class="big d" id="cBetter"></span>
-      <span class="what">take the same time and score higher*</span></div>
+      <span class="what">playing out about 50 possible futures before each move</span></div>
   </div>
   <div class="scroll">
     <table class="nums compact">
-      <caption>* averages over ten games each, on the same ten boards</caption>
+      <caption>10 games each, same 10 boards.</caption>
       <thead><tr><th>player</th><th>avg score</th><th>against Jev</th></tr></thead>
       <tbody id="fair"></tbody>
     </table>
@@ -308,22 +324,21 @@
 
 <section>
   <h2>Train your own</h2>
-  <p>Here's how to do it for Snake. Your coding agent of choice will happily help you
-    port it to anything else.</p>
+  <p>Here's the whole loop for Snake.</p>
   <ol class="steps">
-    <li><p>Have Jev label your inputs. For Snake that was 13,686 boards, for $0.27.</p>
+    <li><p>Have Jev label your inputs.<br><span class="detail">13,686 boards cost $0.27.</span></p>
       <pre>uv run python collect_raw.py --games 90</pre></li>
-    <li><p>Train a small network to copy it. About thirty seconds on a laptop.</p>
+    <li><p>Train Echo to copy it.<br><span class="detail">About 30 seconds on a laptop.</span></p>
       <pre>uv run python train_board.py</pre></li>
     <li><p>Race them.</p>
       <pre>uv run python -m sysone.snake.compare --games 10 --max-steps 2000 \
     --configs jev_raw board_student board_budget_197</pre></li>
+    <li><p>Let Echo drive. Have Jev label the states Echo actually reaches, then retrain.<br>
+      <span class="detail">Only needed with the safety net off. The
+      <a href="https://github.com/Adamya05/jev-echo#reproduce">README</a> has the commands.</span></p></li>
   </ol>
-  <p class="note">With the safety net off, Echo also has to learn from its own mistakes:
-    let it drive (<code>--driver echo</code>) while Jev labels, retrain, and repeat once.
-    The README has the commands.</p>
-  <p class="note">Search strategy depends heavily on the domain. Snake's rules predict
-    the next board exactly, which is what makes thinking ahead cheap here.</p>
+  <p class="note">Snake makes looking ahead unusually cheap because the next board is exactly
+    predictable. In other domains, the best use of the saved time will be different.</p>
 
   <h3 class="rh">Further reading</h3>
   <ul class="reading">
@@ -334,7 +349,8 @@
   </ul>
 </section>
 
-<footer id="foot"></footer>
+<footer><span id="foot"></span>
+  <a href="https://github.com/Adamya05/jev-echo">Code + reproduction steps</a></footer>
 </div>
 
 <script>
@@ -539,15 +555,9 @@ function renderStatic(){
     '<div class="rv2">'+fmtRate(o.r)+'</div><div class="rk">moves / s</div>'+
     '<div class="rx">'+o.x+'</div></div>').join("");
 
-  // Explainer paces, from the replay recording.
-  { const last = D.student[D.student.length-1];
-    const gps = D.student.length / ((last.t0 + last.ms) / 1000);
-    $("jevPace").textContent = "About "+Math.round(RATE.jev)+" moves a second.";
-    $("echoPace").textContent = "About "+Number(gps.toPrecision(2)).toLocaleString()+" games a second."; }
-
   $("foot").textContent =
     "The replay starts all three on the same board. Ten-game figures use boards 0–9, each "+
-    "played to the end. Jev is typesafe/jev-1.13 via OpenRouter; Echo runs on an Apple M4 CPU.";
+    "played to the end. Jev is typesafe/jev-1.13 via OpenRouter; Echo runs on an Apple M4 CPU. ";
 }
 
 // The ten-game claims have their own switch, so the section reads on its own.
@@ -559,8 +569,8 @@ function renderWhy(){
   const betterPct = Math.round((F.search.mean / F.jev.mean - 1) * 100);
   $("cSpeed").textContent = speedX.toLocaleString()+"×";
   { const p = F.pair_echo, clear = Math.abs(p.d) > 2*p.se;
-    $("cSpeedWhat").textContent = !clear ? "give about as good a move, faster"
-      : p.d < 0 ? "give a slightly weaker move, faster" : "give a better move, faster"; }
+    $("cSpeedWhat").textContent = !clear ? "about the same move, faster"
+      : p.d < 0 ? "a slightly weaker move, faster" : "a better move, faster"; }
   $("cBetter").textContent = (betterPct>=0?"+":"−")+Math.abs(betterPct)+"%";
   const n = p => p.w+p.l+p.t;
   const pct = mean => { const v = Math.round((mean/F.jev.mean-1)*100);
