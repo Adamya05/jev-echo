@@ -61,6 +61,7 @@
        color:var(--ink);border-radius:6px;padding:7px 15px;cursor:pointer;
        font:500 13px/1 "JetBrains Mono",monospace}
   .btn:hover{border-color:var(--ink-soft)}
+  .btn:disabled{opacity:.4;cursor:default;border-color:var(--rule-firm)}
   .btn.go{background:var(--ink);color:var(--ground);border-color:var(--ink)}
   .lbl{font:500 12px/1 "JetBrains Mono",monospace;color:var(--ink-faint)}
   .bar .lbl{margin-right:-6px}
@@ -216,6 +217,7 @@
   <div class="seg" id="segMode" role="group" aria-labelledby="lblMode"></div>
   <span class="info"><button type="button" class="info-btn" aria-label="What is the safety net?" aria-describedby="tipTop"><svg width="16" height="16" viewBox="0 0 16 16" aria-hidden="true"><circle cx="8" cy="8" r="6.75" fill="none" stroke="currentColor" stroke-width="1.5"/><circle cx="8" cy="5" r="1" fill="currentColor"/><path d="M8 7.4v4.1" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/></svg></button><span role="tooltip" id="tipTop" class="tip tip-left">On: the models are only ever offered moves that won't crash them. Off: they can pick any direction, so one bad move ends the game.</span></span>
   <div class="seg" id="segSpeed" role="group" aria-label="playback speed"></div>
+  <button class="btn" id="btnSkip">skip to results</button>
   <button class="btn" id="btnPlay">pause</button>
   <button class="btn" id="btnRestart">restart</button>
   <span class="elapsed"><span id="clock">0.0</span>s elapsed</span>
@@ -450,6 +452,7 @@ function tick(){
     }
   });
   $("clock").textContent=(clock/1000).toFixed(1);
+  $("btnSkip").disabled = clock >= BEAT;
   renderTable();
   return clock >= D.horizon_ms;
 }
@@ -484,12 +487,16 @@ function seg(){
 function setPlay(label, go){ const b=$("btnPlay"); b.textContent=label; b.classList.toggle("go",!!go); }
 function reset(){ clock=0; last=null; paused_at_beat=false; closeStats(); }
 function openStats(){ $("ovl").hidden=false; }
+function reachBeat(){
+  clock=BEAT; paused_at_beat=true; playing=false; setPlay("play"); tick(); openStats();
+}
 function closeStats(){ $("ovl").hidden=true; }
 
 $("btnPlay").onclick=()=>{
   if(clock>=D.horizon_ms) reset();
   playing=!playing; setPlay(playing?"pause":"play");
 };
+$("btnSkip").onclick=()=>{ if(clock<BEAT) reachBeat(); };
 $("btnRestart").onclick=()=>{ reset(); playing=true; setPlay("pause"); tick(); };
 $("ovlGo").onclick=()=>{ closeStats(); playing=true; setPlay("pause"); };
 $("ovlReplay").onclick=()=>{ reset(); playing=true; setPlay("pause"); tick(); };
@@ -505,7 +512,7 @@ function loop(ts){
     const before=clock;
     clock+=dt*speed;
     if(!paused_at_beat && before<BEAT && clock>=BEAT){
-      clock=BEAT; paused_at_beat=true; playing=false; setPlay("play"); tick(); openStats();
+      reachBeat();
     }
     if(tick()){ clock=D.horizon_ms; tick(); playing=false; setPlay("replay"); }
   }
