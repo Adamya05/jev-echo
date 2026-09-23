@@ -98,7 +98,7 @@ def rollout(game: Snake, rng: random.Random, depth: int = ROLLOUT_DEPTH,
     re-ranking. Ending closer to the food is the dense signal that keeps
     every rollout informative.
     """
-    g = game.clone()
+    g = game.sim_clone(rng)          # simulated futures draw their own food
     start = g.score
     steps = 0
     while g.alive and steps < depth:
@@ -478,6 +478,98 @@ class BoardStudent:
         return Step(move=move, calls=1, ms=ms, prior=p, improved=p)
 
 
+class TreeSearch:
+    """Every branch, weighted by Echo: an expectation tree.
+
+    Level by level, every live state is expanded into all the moves it is
+    offered. Echo scores a whole level in one batch. A leaf is worth its
+    score if the snake is alive, else 0; a parent is worth the sum of
+    P(branch) x value(branch), with P from Echo. At the root we choose, so
+    we take the best branch (ties go to Echo's pick).
+
+    Depth grows until the next level would overrun the time budget, so it
+    gets the same time per move as Jev. Simulated food lands on a random
+    empty cell (sim_clone), never where the real game will put it.
+    """
+
+    def __init__(self, budget_ms: float = 197.0, path: str = ECHO,
+                 max_depth: int = 16) -> None:
+        from sysone.snake.boardnet import BoardBackend, MOVES
+        self.echo = BoardBackend(path)
+        self.moves = MOVES
+        self.budget, self.max_depth = budget_ms, max_depth
+        self.name = f"STUDENT(board)+tree@{int(budget_ms)}ms"
+
+    def _batch_probs(self, games, facts_list) -> list[dict[str, float]]:
+        import mlx.core as mx
+        from sysone.snake.boardnet import encode_many, masked_log_softmax
+        x = mx.array(encode_many([g.ascii_board().replace("\n", "") for g in games]))
+        m = mx.array([[1.0 if mv in f else 0.0 for mv in self.moves] for f in facts_list])
+        p = mx.exp(masked_log_softmax(self.echo.model(x), m))
+        mx.eval(p)
+        rows = p.tolist()
+        return [{mv: rows[i][j] for j, mv in enumerate(self.moves) if mv in f}
+                for i, f in enumerate(facts_list)]
+
+    def select(self, game: Snake, rng: random.Random) -> Step:
+        facts = game.options()
+        if not facts:
+            return Step(move=game.direction)
+        if len(facts) == 1:
+            return Step(move=next(iter(facts)))
+
+        t0 = time.perf_counter()
+        # node = [game, parent index, P(branch), children]
+        nodes = [[game, -1, 1.0, []]]
+        frontier = [0]
+        levels = [frontier]
+        calls = 0
+        while len(levels) <= self.max_depth:
+            t_level = time.perf_counter()
+            live = [i for i in frontier if nodes[i][0].alive]
+            offered = [nodes[i][0].options() for i in live]
+            expand = [(i, f) for i, f in zip(live, offered) if f]
+            if not expand:
+                break
+            probs = self._batch_probs([nodes[i][0] for i, _ in expand], [f for _, f in expand])
+            calls += len(expand)
+            nxt = []
+            for (i, f), pr in zip(expand, probs):
+                for mv in f:
+                    g2 = nodes[i][0].sim_clone(rng)
+                    g2.step(mv)
+                    nodes[i][3].append(len(nodes))
+                    nodes.append([g2, i, pr[mv], []])
+                    nxt.append(len(nodes) - 1)
+            frontier = nxt
+            levels.append(frontier)
+            spent = (time.perf_counter() - t0) * 1000
+            last = (time.perf_counter() - t_level) * 1000
+            # Next level is about (branching) times this one; stop if it won't fit.
+            grow = len(nxt) / max(len(live), 1)
+            if spent + last * grow > self.budget:
+                break
+
+        # Back up: leaf = score if alive else 0; parent = sum P x child value.
+        value = [0.0] * len(nodes)
+        for i in range(len(nodes) - 1, -1, -1):
+            g, _, _, kids = nodes[i]
+            if not g.alive:
+                value[i] = 0.0
+            elif not kids:
+                value[i] = float(g.score)
+            else:
+                value[i] = sum(nodes[k][2] * value[k] for k in kids)
+
+        root_kids = nodes[0][3]
+        prior = {m: nodes[k][2] for m, k in zip(facts, root_kids)}
+        vals = {m: value[k] for m, k in zip(facts, root_kids)}
+        best = max(vals, key=lambda m: (round(vals[m], 9), prior[m]))
+        return Step(move=best, calls=calls, ms=(time.perf_counter() - t0) * 1000,
+                    prior=prior, improved=softmax(vals, TARGET_TEMP),
+                    visits={"depth": len(levels) - 1})
+
+
 class BudgetSearch:
     """Same wall-clock per move as one Jev call -- spent on search instead.
 
@@ -514,7 +606,7 @@ class BudgetSearch:
         cands = sorted(prior, key=prior.get, reverse=True)[: self.n]
         nxt = {}
         for m in cands:
-            g2 = game.clone(); g2.step(m)
+            g2 = game.sim_clone(rng); g2.step(m)
             nxt[m] = g2 if g2.alive else None
 
         tot = {m: 0.0 for m in cands}
@@ -743,6 +835,9 @@ def build(name: str, backend: Backend | None, iterations: int = 160,
         return StudentPolicy("results/student_prior.npz", "prior")
     if name == "board_student":
         return BoardStudent()
+    if name.startswith("board_tree"):
+        ms = name.split("_")[-1]
+        return TreeSearch(budget_ms=float(ms) if ms.isdigit() else 197.0)
     if name.startswith("board_budget"):
         ms = name.split("_")[-1]
         return BudgetSearch(budget_ms=float(ms) if ms.isdigit() else 208.0)

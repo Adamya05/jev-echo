@@ -80,6 +80,18 @@ class Snake:
         """
         return copy.deepcopy(self)
 
+    def sim_clone(self, rng: random.Random | None = None) -> "Snake":
+        """A copy for search to simulate on, without knowledge of future food.
+
+        Same board, but a fresh RNG (seeded from `rng`), so food still goes
+        through place_food -- any empty cell -- just not where the real game
+        will put it. clone() would hand search the real future food.
+        """
+        g = copy.copy(self)
+        g.body = deque(self.body)
+        g.rng = random.Random(rng.random() if rng is not None else None)
+        return g
+
     def state_key(self) -> tuple:
         """Identity of a position, for caching priors across a search."""
         return (tuple(self.body), self.food, self.direction)
