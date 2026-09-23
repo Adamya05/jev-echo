@@ -11,12 +11,17 @@ given these four futures, which one.
 from __future__ import annotations
 
 import copy
+import os
 import random
 from collections import deque
 from dataclasses import dataclass, field
 
 DIRECTIONS = {"UP": (0, -1), "DOWN": (0, 1), "LEFT": (-1, 0), "RIGHT": (1, 0)}
 OPPOSITE = {"UP": "DOWN", "DOWN": "UP", "LEFT": "RIGHT", "RIGHT": "LEFT"}
+
+# When set, players are offered every legal move -- including ones that crash --
+# instead of only the survivable ones. Off, behaviour is unchanged.
+ALLOW_CRASH = os.environ.get("SNAKE_ALLOW_CRASH") == "1"
 
 
 @dataclass
@@ -149,6 +154,12 @@ class Snake:
             room_for_body=len(reachable) >= len(body_after),
             keeps_tail_reachable=tail in reachable or tail == nxt,
         )
+
+    def options(self) -> dict[str, MoveFacts]:
+        """The moves a player is offered: survivable ones, or every legal one."""
+        if ALLOW_CRASH:
+            return {m: self.analyse(m) for m in self.legal_moves()}
+        return self.survivable_moves()
 
     def survivable_moves(self) -> dict[str, MoveFacts]:
         """Legal, non-fatal moves. The action space Jev actually chooses from."""

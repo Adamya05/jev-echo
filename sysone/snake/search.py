@@ -31,7 +31,9 @@ from typing import Any
 
 from sysone.core import Backend, Choice
 from sysone.snake import policy as jev_policy
-from sysone.snake.game import MoveFacts, Snake
+from sysone.snake.game import ALLOW_CRASH, MoveFacts, Snake
+
+ECHO = "results/student_board_crash.npz" if ALLOW_CRASH else "results/student_board.npz"
 
 C_PUCT = 1.4
 ROLLOUT_DEPTH = 40
@@ -68,13 +70,13 @@ def softmax(scores: dict[str, float], temp: float = 1.0) -> dict[str, float]:
 
 def heuristic_prior(game: Snake, facts: dict[str, MoveFacts] | None = None
                     ) -> dict[str, float]:
-    facts = facts if facts is not None else game.survivable_moves()
+    facts = facts if facts is not None else game.options()
     return softmax(heuristic_scores(game, facts))
 
 
 def uniform_prior(game: Snake, facts: dict[str, MoveFacts] | None = None
                   ) -> dict[str, float]:
-    facts = facts if facts is not None else game.survivable_moves()
+    facts = facts if facts is not None else game.options()
     n = len(facts) or 1
     return {m: 1.0 / n for m in facts}
 
@@ -98,7 +100,7 @@ def rollout(game: Snake, rng: random.Random, depth: int = ROLLOUT_DEPTH,
     start = g.score
     steps = 0
     while g.alive and steps < depth:
-        facts = g.survivable_moves()
+        facts = g.options()
         if not facts:
             break
         probs = (policy(g, facts) if policy is not None
@@ -261,7 +263,7 @@ class JevOnly:
         self.name = label
 
     def select(self, game: Snake, rng: random.Random) -> Step:
-        facts = game.survivable_moves()
+        facts = game.options()
         if not facts:
             return Step(move=game.direction)
         if len(facts) == 1:
@@ -296,7 +298,7 @@ class JevBestOfN:
         self.name = f"JEV+BESTOF({rollouts})"
 
     def select(self, game: Snake, rng: random.Random) -> Step:
-        facts = game.survivable_moves()
+        facts = game.options()
         if not facts:
             return Step(move=game.direction)
         if len(facts) == 1:
@@ -338,7 +340,7 @@ class MCTSPolicy:
         self.name = f"JEV+MCTS({iterations})" if use_jev else f"UNIFORM+MCTS({iterations})"
 
     def select(self, game: Snake, rng: random.Random) -> Step:
-        facts = game.survivable_moves()
+        facts = game.options()
         if not facts:
             return Step(move=game.direction)
         if len(facts) == 1:
@@ -376,7 +378,7 @@ class LayaPolicy:
         self.backend = LayaBackend()
 
     def select(self, game: Snake, rng: random.Random) -> Step:
-        facts = game.survivable_moves()
+        facts = game.options()
         if not facts:
             return Step(move=game.direction)
         if len(facts) == 1:
@@ -425,7 +427,7 @@ class StudentSearch:
         return self.backend.predict(game)
 
     def select(self, game: Snake, rng: random.Random) -> Step:
-        facts = game.survivable_moves()
+        facts = game.options()
         if not facts:
             return Step(move=game.direction)
         if len(facts) == 1:
@@ -457,12 +459,12 @@ class BoardStudent:
 
     name = "STUDENT(board)"
 
-    def __init__(self, path: str = "results/student_board.npz") -> None:
+    def __init__(self, path: str = ECHO) -> None:
         from sysone.snake.boardnet import BoardBackend
         self.backend = BoardBackend(path)
 
     def select(self, game: Snake, rng: random.Random) -> Step:
-        facts = game.survivable_moves()
+        facts = game.options()
         if not facts:
             return Step(move=game.direction)
         if len(facts) == 1:
@@ -488,7 +490,7 @@ class BudgetSearch:
 
     def __init__(self, budget_ms: float = 208.0, n: int = 3, depth: int = 8,
                  prior_weight: float = 0.25,
-                 path: str = "results/student_board.npz") -> None:
+                 path: str = ECHO) -> None:
         from sysone.snake.boardnet import BoardBackend
         self.backend = BoardBackend(path)
         self.budget, self.n, self.depth = budget_ms, n, depth
@@ -499,7 +501,7 @@ class BudgetSearch:
         return self.backend.predict(game)
 
     def select(self, game: Snake, rng: random.Random) -> Step:
-        facts = game.survivable_moves()
+        facts = game.options()
         if not facts:
             return Step(move=game.direction)
         if len(facts) == 1:
@@ -576,7 +578,7 @@ class SelfSearch:
         return self._ask(game, facts)[0]
 
     def select(self, game: Snake, rng: random.Random) -> Step:
-        facts = game.survivable_moves()
+        facts = game.options()
         if not facts:
             return Step(move=game.direction)
         if len(facts) == 1:
@@ -619,7 +621,7 @@ class RawPolicy:
         self.name = {"jev_or": "JEV(raw)", "laya_fast": "LAYA(raw)"}.get(which, which)
 
     def select(self, game: Snake, rng: random.Random) -> Step:
-        facts = game.survivable_moves()
+        facts = game.options()
         if not facts:
             return Step(move=game.direction)
         if len(facts) == 1:
@@ -669,7 +671,7 @@ class HybridSearch:
         return self.student.predict(game)
 
     def select(self, game: Snake, rng: random.Random) -> Step:
-        facts = game.survivable_moves()
+        facts = game.options()
         if not facts:
             return Step(move=game.direction)
         if len(facts) == 1:
@@ -707,7 +709,7 @@ class StudentPolicy:
         self.name = f"STUDENT({label})"
 
     def select(self, game: Snake, rng: random.Random) -> Step:
-        facts = game.survivable_moves()
+        facts = game.options()
         if not facts:
             return Step(move=game.direction)
         if len(facts) == 1:

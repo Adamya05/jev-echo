@@ -33,7 +33,7 @@ def play(seed: int, max_steps: int) -> dict:
     usd = 0.0
 
     while g.alive and g.steps < max_steps:
-        facts = g.survivable_moves()
+        facts = g.options()
         if not facts:
             break
         if len(facts) == 1:
@@ -46,7 +46,12 @@ def play(seed: int, max_steps: int) -> dict:
             boards.append(g.ascii_board().replace("\n", ""))
             masks.append([1.0 if m in facts else 0.0 for m in MOVES])
             targets.append([p.get(m, 0.0) / tot for m in MOVES])
-        g.step(max(driver.predict(g).items(), key=lambda kv: kv[1])[0])
+        # The driver only plays safe moves; when none are left the game is over.
+        # (With crashes allowed, options() is never empty, so it can't be the check.)
+        safe = driver.predict(g)
+        if not safe:
+            break
+        g.step(max(safe.items(), key=lambda kv: kv[1])[0])
     return {"boards": boards, "mask": masks, "target": targets,
             "score": g.score, "usd": usd}
 
