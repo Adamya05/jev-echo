@@ -43,7 +43,8 @@ def pack_fair(rows):
     fair = {}
     for cfg, key in names.items():
         sc = [r["score"] for r in by[cfg].values()]
-        fair[key] = {"mean": round(st.mean(sc), 1), "ms": round(st.median(r["ms"] for r in by[cfg].values()), 2)}
+        fair[key] = {"mean": round(st.mean(sc), 1), "se": round(st.stdev(sc) / len(sc) ** 0.5, 2),
+                     "ms": round(st.median(r["ms"] for r in by[cfg].values()), 2)}
     for key, cfg in (("echo", "STUDENT(board)"), ("search", search)):
         diff = [by[cfg][s]["score"] - by["JEV(raw)"][s]["score"] for s in sorted(by[cfg])]
         fair["pair_" + key] = {"d": round(st.mean(diff), 2),
