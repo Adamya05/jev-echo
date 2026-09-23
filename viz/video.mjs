@@ -12,7 +12,7 @@ const CHROME = "/Applications/Google Chrome.app/Contents/MacOS/Google Chrome";
 const PAGE = pathToFileURL(resolve("docs/index.html")).href + "?capture&theme=dark&mode=net";
 const W = 1280, H = 720, DPR = 1.5, FPS = 30;
 const OPEN_S = 4, HOLD_S = 3;              // 1x opening, then 5x, then hold on the card
-const KEEP_H = 672;                        // crop just below the headline
+const KEEP_H = 712;                        // headline and lede, nothing below
 
 const frames = mkdtempSync(join(tmpdir(), "echo-frames-"));
 const profile = mkdtempSync(join(tmpdir(), "echo-chrome-"));

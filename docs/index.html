@@ -241,8 +241,7 @@
 
 <section>
   <h1 id="h1"></h1>
-  <p class="lede">Echo works on the same inputs as Jev, and learnt from Jev's outputs
-    on different boards.</p>
+  <p class="lede">Echo is a tiny model that only plays Snake, trained on Jev's answers.</p>
   <div class="scroll">
     <table class="nums">
       <caption id="tcap"></caption>
@@ -630,7 +629,7 @@ function renderStatic(){
   const echoAtJev = tally(D.student, jevGame);
   const J = tally(D.jev, BEAT), E = tally(D.student, BEAT), S = tally(D.search, BEAT);
 
-  $("h1").textContent = "Jev plays one game. Echo plays "+echoAtJev.done.toLocaleString()+".";
+  $("h1").textContent = "Jev plays one game of Snake. Echo plays "+echoAtJev.done.toLocaleString()+".";
 
   const rateOf = gs => { const t=gs.reduce((x,g)=>x+g.ms,0);
     return gs.reduce((x,g)=>x+g.moves,0)/(t/1000); };
