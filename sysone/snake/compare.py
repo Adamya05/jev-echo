@@ -130,8 +130,7 @@ def main() -> int:
     print(BOLD + hdr + RESET)
     print(DIM + "-" * len(hdr) + RESET)
 
-    for cfg in [search.build(c, None, args.iterations).name if c == "uniform_mcts"
-                else None for c in []] or list(by_config):
+    for cfg in by_config:
         rs = by_config[cfg]
         scores = [r.score for r in rs]
         score = statistics.mean(scores)

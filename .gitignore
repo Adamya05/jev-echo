@@ -20,5 +20,6 @@ results/
 # macOS
 .DS_Store
 
-# Tool caches
-.impeccable/*.cache.json
+# Local tooling
+.claude/
+.impeccable/
