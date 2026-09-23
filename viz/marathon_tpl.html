@@ -62,7 +62,23 @@
        font:500 13px/1 "JetBrains Mono",monospace}
   .btn:hover{border-color:var(--ink-soft)}
   .btn.go{background:var(--ink);color:var(--ground);border-color:var(--ink)}
-  .bar .lbl{font:500 12px/1 "JetBrains Mono",monospace;color:var(--ink-faint);margin-right:-6px}
+  .lbl{font:500 12px/1 "JetBrains Mono",monospace;color:var(--ink-faint)}
+  .bar .lbl{margin-right:-6px}
+  .info{position:relative;display:inline-flex;align-items:center}
+  .info-btn{appearance:none;border:0;background:none;padding:3px;margin:-3px;display:flex;
+            color:var(--ink-faint);cursor:help;border-radius:50%}
+  .info-btn:hover,.info-btn:focus-visible{color:var(--ink)}
+  .tip{position:absolute;z-index:6;top:calc(100% + 9px);width:270px;max-width:calc(100vw - 40px);
+       background:var(--ink);color:var(--ground);font:400 14px/1.45 "Source Sans 3",sans-serif;
+       padding:10px 12px;border-radius:7px;box-shadow:0 10px 24px -10px rgba(0,0,0,.4);
+       opacity:0;visibility:hidden;transform:translateY(-3px);
+       transition:opacity .14s ease-out,transform .14s ease-out,visibility .14s}
+  .tip-left{left:-10px} .tip-right{right:-10px}
+  .info:hover .tip,.info-btn:focus-visible + .tip,.info.open .tip{opacity:1;visibility:visible;transform:none}
+  .sechead{display:flex;flex-wrap:wrap;align-items:center;justify-content:space-between;gap:10px 18px}
+  .sechead h2{margin:0}
+  .net-ctl{display:flex;align-items:center;gap:8px}
+  @media (prefers-reduced-motion:reduce){ .tip{transition:none} }
   .elapsed{margin-left:auto;font:700 15px/1 "JetBrains Mono",monospace;
            font-variant-numeric:tabular-nums;color:var(--ink-soft)}
 
@@ -198,6 +214,7 @@
 <div class="bar">
   <span class="lbl" id="lblMode">Safety net</span>
   <div class="seg" id="segMode" role="group" aria-labelledby="lblMode"></div>
+  <span class="info"><button type="button" class="info-btn" aria-label="What is the safety net?" aria-describedby="tipTop"><svg width="16" height="16" viewBox="0 0 16 16" aria-hidden="true"><circle cx="8" cy="8" r="6.75" fill="none" stroke="currentColor" stroke-width="1.5"/><circle cx="8" cy="5" r="1" fill="currentColor"/><path d="M8 7.4v4.1" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/></svg></button><span role="tooltip" id="tipTop" class="tip tip-left">On: the models are only ever offered moves that won't crash them. Off: they can pick any direction, so one bad move ends the game.</span></span>
   <div class="seg" id="segSpeed" role="group" aria-label="playback speed"></div>
   <button class="btn" id="btnPlay">pause</button>
   <button class="btn" id="btnRestart">restart</button>
@@ -269,7 +286,14 @@
 </section>
 
 <section>
-  <h2>Why have an expert?</h2>
+  <div class="sechead">
+    <h2>Why have an expert?</h2>
+    <div class="net-ctl">
+      <span class="lbl" id="lblWhy">Safety net</span>
+      <div class="seg" id="segWhy" role="group" aria-labelledby="lblWhy"></div>
+      <span class="info"><button type="button" class="info-btn" aria-label="What is the safety net?" aria-describedby="tipWhy"><svg width="16" height="16" viewBox="0 0 16 16" aria-hidden="true"><circle cx="8" cy="8" r="6.75" fill="none" stroke="currentColor" stroke-width="1.5"/><circle cx="8" cy="5" r="1" fill="currentColor"/><path d="M8 7.4v4.1" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/></svg></button><span role="tooltip" id="tipWhy" class="tip tip-right">On: the models are only ever offered moves that won't crash them. Off: they can pick any direction, so one bad move ends the game.</span></span>
+    </div>
+  </div>
   <p>The whole appeal of a System 1 model is speed. Echo can either</p>
   <div class="claims">
     <div class="claim"><span class="big l" id="cSpeed"></span>
@@ -493,10 +517,8 @@ function renderStatic(){
   const jevGame = D.jev[0].ms;
   const echoAtJev = tally(D.student, jevGame);
   const J = tally(D.jev, BEAT), E = tally(D.student, BEAT), S = tally(D.search, BEAT);
-  const F = D.fair;
 
   $("h1").textContent = "Jev plays one game. Echo plays "+echoAtJev.done.toLocaleString()+".";
-  const searchWins = Math.abs(F.pair_search.d) > 2*F.pair_search.se && F.pair_search.d > 0;
 
   const rateOf = gs => { const t=gs.reduce((x,g)=>x+g.ms,0);
     return gs.reduce((x,g)=>x+g.moves,0)/(t/1000); };
@@ -522,6 +544,15 @@ function renderStatic(){
     $("jevPace").textContent = "About "+Math.round(RATE.jev)+" moves a second.";
     $("echoPace").textContent = "About "+Number(gps.toPrecision(2)).toLocaleString()+" games a second."; }
 
+  $("foot").textContent =
+    "The replay starts all three on the same board. Ten-game figures use boards 0–9, each "+
+    "played to the end. Jev is typesafe/jev-1.13 via OpenRouter; Echo runs on an Apple M4 CPU.";
+}
+
+// The ten-game claims have their own switch, so the section reads on its own.
+let WHY = "net";
+function renderWhy(){
+  const F = ALL[WHY].fair;
   // Headline claims, from the ten-game runs.
   const speedX = Number((F.jev.ms / F.echo.ms).toPrecision(2));
   const betterPct = Math.round((F.search.mean / F.jev.mean - 1) * 100);
@@ -541,20 +572,33 @@ function renderStatic(){
     '<tr class="l"><td>Echo</td><td>'+F.echo.mean.toFixed(1)+'</td><td>'+vsJev(F.pair_echo,F.echo.mean)+'</td></tr>'+
     '<tr class="d"><td>Echo + search</td><td>'+F.search.mean.toFixed(1)+'</td><td>'+
       vsJev(F.pair_search,F.search.mean)+'</td></tr>';
-  $("foot").textContent =
-    "The replay starts all three on the same board. Ten-game figures use boards 0–9, each "+
-    "played to the end. Jev is typesafe/jev-1.13 via OpenRouter; Echo runs on an Apple M4 CPU.";
 }
 
-function modeSeg(){
-  const el=$("segMode"); el.innerHTML="";
+function netSeg(id, current, set){
+  const el=$(id); el.innerHTML="";
   [["net","on"],["crash","off"]].forEach(([m,label])=>{
     const b=document.createElement("button"); b.type="button"; b.textContent=label;
-    b.setAttribute("aria-pressed", String(MODE===m));
-    b.onclick=()=>{ if(MODE!==m) setMode(m); };
+    b.setAttribute("aria-pressed", String(current===m));
+    b.onclick=()=>{ if(current!==m) set(m); };
     el.appendChild(b);
   });
 }
+function modeSeg(){ netSeg("segMode", MODE, setMode); }
+function whySeg(){ netSeg("segWhy", WHY, m=>{ WHY=m; whySeg(); renderWhy(); }); }
+
+// Info tooltips: hover and keyboard focus are handled in CSS; tap toggles.
+document.querySelectorAll(".info-btn").forEach(btn=>{
+  btn.addEventListener("click", e=>{
+    e.stopPropagation();
+    const box=btn.parentElement, was=box.classList.contains("open");
+    document.querySelectorAll(".info.open").forEach(x=>x.classList.remove("open"));
+    if(!was) box.classList.add("open");
+  });
+});
+document.addEventListener("click", ()=>document.querySelectorAll(".info.open")
+  .forEach(x=>x.classList.remove("open")));
+document.addEventListener("keydown", e=>{ if(e.key==="Escape")
+  document.querySelectorAll(".info.open").forEach(x=>x.classList.remove("open")); });
 function setMode(m){
   MODE=m; D=ALL[m];
   BEAT = Math.max(D.jev[0].t0 + D.jev[0].ms, D.search[0].t0 + D.search[0].ms);
@@ -563,7 +607,7 @@ function setMode(m){
   reset(); playing=true; setPlay("pause"); tick();
 }
 
-seg(); setMode("net");
+seg(); setMode("net"); whySeg(); renderWhy();
 requestAnimationFrame(loop);
 
 /* ---- your turn ---- */
