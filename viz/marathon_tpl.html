@@ -288,13 +288,15 @@
   <p>Here's how to do it for Snake. Your coding agent of choice will happily help you
     port it to anything else.</p>
   <ol class="steps">
-    <li><p>Have Jev label your inputs. For Snake that was 13,686 boards, for $0.27.</p>
-      <pre>uv run python collect_raw.py --games 90</pre></li>
+    <li><p>Have Jev label your inputs. For Snake that was 14,391 boards, for $0.29.</p>
+      <pre>SNAKE_ALLOW_CRASH=1 uv run python collect_raw.py --games 90 \
+    --out results/dataset_board_crash.npz</pre></li>
     <li><p>Train a small network to copy it. About thirty seconds on a laptop.</p>
-      <pre>uv run python train_board.py</pre></li>
+      <pre>uv run python train_board.py --data results/dataset_board_crash.npz \
+    --out results/student_board_crash.npz</pre></li>
     <li><p>Race them.</p>
-      <pre>uv run python -m sysone.snake.compare --games 10 --max-steps 150 \
-    --configs jev_raw board_student board_budget_197</pre></li>
+      <pre>SNAKE_ALLOW_CRASH=1 uv run python -m sysone.snake.compare --games 10 \
+    --max-steps 150 --configs jev_raw board_student board_budget_181</pre></li>
   </ol>
   <p class="note">Search strategy depends heavily on the domain. Snake's rules predict
     the next board exactly, which is what makes thinking ahead cheap here.</p>

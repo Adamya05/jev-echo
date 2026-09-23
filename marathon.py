@@ -24,7 +24,7 @@ def one_game(pol, seed: int, max_moves: int, keep_every: int = 1):
     frames = []
     spent = 0.0
     while g.alive and g.steps < max_moves:
-        f = g.survivable_moves()
+        f = g.options()
         if not f:
             break
         t = time.perf_counter()

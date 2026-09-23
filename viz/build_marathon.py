@@ -1,7 +1,9 @@
 """Pack the marathon recording into the page."""
-import json, pathlib
+import json, os, pathlib
+CRASH = os.environ.get("SNAKE_ALLOW_CRASH") == "1"
+SUFFIX = "_crash" if CRASH else ""
 
-d = json.loads(pathlib.Path("results/marathon.json").read_text())
+d = json.loads(pathlib.Path(f"results/marathon{SUFFIX}.json").read_text())
 
 # The demo pauses when BOTH slow players have finished a game, so the horizon
 # has to clear that moment with room for Echo to keep running afterwards.
@@ -36,12 +38,18 @@ d["horizon_ms"] = min(HORIZON,
 # Ten-seed comparison: the fair test of score, since one replayed game is
 # one sample. Paired by seed, so board luck cancels out.
 import statistics as st
-rows = json.loads(pathlib.Path("results/fair.json").read_text())
-# Echo + search was re-run with its budget matched to Jev's per-move time.
-matched = pathlib.Path("results/fair_search197.json")
-if matched.exists():
-    rows = [r for r in rows if not r["config"].startswith("STUDENT(board)+search")]
-    rows += json.loads(matched.read_text())
+if CRASH:
+    # Jev from the first crash run; Echo and Echo + search from the retrained model.
+    rows = [r for r in json.loads(pathlib.Path("results/fair_crash.json").read_text())
+            if r["config"] == "JEV(raw)"]
+    rows += json.loads(pathlib.Path("results/fair_crash_echo.json").read_text())
+else:
+    rows = json.loads(pathlib.Path("results/fair.json").read_text())
+    # Echo + search was re-run with its budget matched to Jev's per-move time.
+    matched = pathlib.Path("results/fair_search197.json")
+    if matched.exists():
+        rows = [r for r in rows if not r["config"].startswith("STUDENT(board)+search")]
+        rows += json.loads(matched.read_text())
 SEARCH = next(r["config"] for r in rows if r["config"].startswith("STUDENT(board)+search"))
 by = {}
 for r in rows:

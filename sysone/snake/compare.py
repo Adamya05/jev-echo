@@ -63,7 +63,7 @@ def play(config: str, seed: int, iterations: int, max_steps: int,
 
     t0 = time.perf_counter()
     while game.alive and game.steps < max_steps:
-        facts = game.survivable_moves()
+        facts = game.options()
         if not facts:
             r.death = "boxed in"
             break

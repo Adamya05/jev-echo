@@ -127,7 +127,7 @@ class BoardBackend:
         self.name = "student:board"
 
     def predict(self, game: Snake) -> dict[str, float]:
-        facts = game.survivable_moves()
+        facts = game.options()
         x = mx.array(encode_many([game.ascii_board().replace("\n", "")]))
         m = mx.array([[1.0 if mv in facts else 0.0 for mv in MOVES]])
         p = mx.exp(masked_log_softmax(self.model(x), m))
