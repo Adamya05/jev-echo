@@ -289,10 +289,10 @@
     </table>
   </div>
   <div class="explain">
-    <div><h3>Jev</h3>
-      <p>A general-purpose System 1 model, running in the cloud.</p></div>
     <div><h3>Echo</h3>
       <p>An 87 KB network trained on Jev's answers, running on the laptop.</p></div>
+    <div><h3>Jev</h3>
+      <p>A general-purpose System 1 model, running in the cloud.</p></div>
     <div><h3>Echo + search</h3>
       <p>Echo slowed to Jev's pace and spends the extra time playing each option forward
         before it moves.</p></div>
@@ -479,8 +479,8 @@ const ALL = {"net":{"budget_ms":24029.07,"jev":[{"frames":[{"t":387.77,"s":0,"l"
 let MODE = "net", D = ALL.net;
 const $ = id => document.getElementById(id);
 const PANELS = [
-  {key:"jev",     name:"Jev",           where:"cloud", tone:"cloud", row:"c"},
   {key:"student", name:"Echo",          where:"local", tone:"local", row:"l"},
+  {key:"jev",     name:"Jev",           where:"cloud", tone:"cloud", row:"c"},
   {key:"search",  name:"Echo + search", where:"local", tone:"deep",  row:"d"},
 ];
 const SPEEDS = [1,2,5];
@@ -658,11 +658,11 @@ function renderStatic(){
   const rateOf = gs => { const t=gs.reduce((x,g)=>x+g.ms,0);
     return gs.reduce((x,g)=>x+g.moves,0)/(t/1000); };
   const res = [
-    {cls:"c", name:"Jev", v:D.jev[0].score, k:"score", r:RATE.jev,
-     x:"1 game"},
     {cls:"l", name:"Echo", v:(E.total/E.done).toFixed(1), k:"average score",
      r:RATE.student,
      x:echoAtJev.done.toLocaleString()+" games in the time Jev played one"},
+    {cls:"c", name:"Jev", v:D.jev[0].score, k:"score", r:RATE.jev,
+     x:"1 game"},
     {cls:"d", name:"Echo + search", v:D.search[0].score, k:"score", r:RATE.search,
      x: Math.abs(RATE.search/RATE.jev-1) < 0.1 ? "1 game, at Jev's pace"
         : "1 game, at "+fmtRate(RATE.search)+" moves/s"},
