@@ -2,7 +2,7 @@
 <html lang="en">
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>Jev and Echo</title>
+<title>The case for specialised System 1 modules</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Archivo:wght@600;700;800&family=Source+Sans+3:wght@400;600&family=JetBrains+Mono:wght@400;500;700&display=swap">
@@ -240,8 +240,8 @@
 </div>
 
 <section>
-  <h1 id="h1"></h1>
-  <p class="lede">Echo is a tiny model that only plays Snake, trained on Jev's answers.</p>
+  <h1 id="h1">Same score as Jev.<br> A thousandth of the time. No cloud.</h1>
+  <p class="lede">Echo only plays Snake, and learnt it from Jev's answers.</p>
   <div class="scroll">
     <table class="nums">
       <caption id="tcap"></caption>
@@ -288,7 +288,7 @@
 
 <section>
   <div class="sechead">
-    <h2>Why have an expert?</h2>
+    <h2>The case for specialised System 1 modules</h2>
     <div class="net-ctl">
       <span class="lbl" id="lblWhy">Safety net</span>
       <div class="seg" id="segWhy" role="group" aria-labelledby="lblWhy"></div>
@@ -324,8 +324,9 @@
       <pre>uv run python -m sysone.snake.compare --games 10 --max-steps 2000 \
     --configs jev_raw board_student board_budget_197</pre></li>
   </ol>
-  <p class="note">For the version with the safety net off, run the same steps with
-    <code>SNAKE_ALLOW_CRASH=1</code> in front.</p>
+  <p class="note">With the safety net off, Echo also has to learn from its own mistakes:
+    let it drive (<code>--driver echo</code>) while Jev labels, retrain, and repeat once.
+    The README has the commands.</p>
   <p class="note">Search strategy depends heavily on the domain. Snake's rules predict
     the next board exactly, which is what makes thinking ahead cheap here.</p>
 
@@ -524,7 +525,6 @@ function renderStatic(){
   const echoAtJev = tally(D.student, jevGame);
   const J = tally(D.jev, BEAT), E = tally(D.student, BEAT), S = tally(D.search, BEAT);
 
-  $("h1").textContent = "Jev plays one game of Snake. Echo plays "+echoAtJev.done.toLocaleString()+".";
 
   const rateOf = gs => { const t=gs.reduce((x,g)=>x+g.ms,0);
     return gs.reduce((x,g)=>x+g.moves,0)/(t/1000); };

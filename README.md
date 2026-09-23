@@ -13,9 +13,9 @@ Ten games per player, all three on the same ten boards, each played to the end.
 | | Safety net on | Safety net off |
 |---|---|---|
 | Jev | 21.5 | 8.9 |
-| Echo | 17.8 · no clear difference | 6.0 · −33%, lost 6 of 10 |
+| Echo | 17.8 · no clear difference | 7.7 · no clear difference |
 | Echo + search | 29.1 · **+35%, won 9 of 10** | 17.2 · **+93%, won 9 of 10** |
-| Time per move, Jev / Echo | 215 ms / 0.20 ms | 227 ms / 0.22 ms |
+| Time per move, Jev / Echo | 215 ms / 0.20 ms | 227 ms / 0.21 ms |
 
 **Safety net on:** the models are only offered moves that won't crash them.
 **Off:** they can pick any direction, so one bad move ends the game.
@@ -52,14 +52,27 @@ uv run python -m sysone.snake.compare --games 10 --max-steps 2000 \
 uv run python record_replay.py                 # the replay on the page, ~$0.01
 ```
 
-Safety net off (same steps, crash mode, separate files):
+Safety net off. Copying Jev's games isn't enough here: one slip ends the game, and
+Echo never saw the boards its own slips lead to. So after the first round, Echo
+drives and Jev labels where it ends up (DAgger), twice. That took Echo from 6.0 to
+7.7 for another ~$0.48.
 
 ```bash
-SNAKE_ALLOW_CRASH=1 uv run python collect_raw.py --games 90 --out results/dataset_board_crash.npz
-uv run python train_board.py --data results/dataset_board_crash.npz --out results/student_board_crash.npz
-SNAKE_ALLOW_CRASH=1 uv run python -m sysone.snake.compare --games 10 --max-steps 2000 \
+export SNAKE_ALLOW_CRASH=1
+uv run python collect_raw.py --games 90 --out results/dataset_board_crash.npz
+uv run python train_board.py --data results/dataset_board_crash.npz --out results/student_board_crash_v1.npz
+uv run python collect_raw.py --driver echo --echo results/student_board_crash_v1.npz \
+    --games 250 --max-steps 2000 --seed-offset 5000 --out results/dataset_board_crash_dagger1.npz
+uv run python train_board.py --data results/dataset_board_crash.npz results/dataset_board_crash_dagger1.npz \
+    --out results/student_board_crash_d1.npz
+uv run python collect_raw.py --driver echo --echo results/student_board_crash_d1.npz \
+    --games 250 --max-steps 2000 --seed-offset 6000 --out results/dataset_board_crash_dagger2.npz
+uv run python train_board.py --data results/dataset_board_crash.npz results/dataset_board_crash_dagger1.npz \
+    results/dataset_board_crash_dagger2.npz --out results/student_board_crash.npz
+uv run python -m sysone.snake.compare --games 10 --max-steps 2000 \
     --configs jev_raw board_student board_budget_181 --save results/fair_crash_uncapped.json
-SNAKE_ALLOW_CRASH=1 uv run python record_replay.py
+uv run python record_replay.py
+unset SNAKE_ALLOW_CRASH
 ```
 
 Then build the page from both:

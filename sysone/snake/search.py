@@ -24,6 +24,7 @@ the search rather than the prior, and the experiment says nothing.
 from __future__ import annotations
 
 import math
+import os
 import random
 import time
 from dataclasses import dataclass, field
@@ -33,7 +34,8 @@ from sysone.core import Backend, Choice
 from sysone.snake import policy as jev_policy
 from sysone.snake.game import ALLOW_CRASH, MoveFacts, Snake
 
-ECHO = "results/student_board_crash.npz" if ALLOW_CRASH else "results/student_board.npz"
+ECHO = os.environ.get("SNAKE_ECHO") or (
+    "results/student_board_crash.npz" if ALLOW_CRASH else "results/student_board.npz")
 
 C_PUCT = 1.4
 ROLLOUT_DEPTH = 40

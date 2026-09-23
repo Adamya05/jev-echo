@@ -7,7 +7,12 @@ board exactly as Jev sees it, so the student can consume the same input.
 A strong local policy drives the game (free) so the states are worth
 labelling; Jev labels every decision from the raw board.
 
+With --driver echo, Echo itself drives and Jev labels the boards Echo
+reaches, mistakes included (DAgger), so a retrained Echo learns to recover.
+
     uv run python collect_raw.py --games 90
+    uv run python collect_raw.py --driver echo --echo results/student_board.npz \
+        --seed-offset 5000 --out results/dataset_board_dagger1.npz
 """
 from __future__ import annotations
 import argparse, pathlib, random, time
@@ -20,14 +25,17 @@ from sysone.snake.game import Snake
 MOVES = ("UP", "DOWN", "LEFT", "RIGHT")
 
 
-def play(seed: int, max_steps: int) -> dict:
+def play(seed: int, max_steps: int, driver_kind: str = "student",
+         echo: str = "") -> dict:
     import mlx.core as mx
     mx.set_default_device(mx.cpu)
     from sysone.core import get_backend
     from sysone.snake.student import StudentBackend
+    from sysone.snake.boardnet import BoardBackend
 
     jev = get_backend("jev_or")
-    driver = StudentBackend("results/student_prior.npz")
+    driver = (BoardBackend(echo) if driver_kind == "echo"
+              else StudentBackend("results/student_prior.npz"))
     g = Snake(seed=seed)
     boards, masks, targets = [], [], []
     usd = 0.0
@@ -46,8 +54,8 @@ def play(seed: int, max_steps: int) -> dict:
             boards.append(g.ascii_board().replace("\n", ""))
             masks.append([1.0 if m in facts else 0.0 for m in MOVES])
             targets.append([p.get(m, 0.0) / tot for m in MOVES])
-        # The driver only plays safe moves; when none are left the game is over.
-        # (With crashes allowed, options() is never empty, so it can't be the check.)
+        # The student driver only plays safe moves; when none are left the game
+        # is over. Echo plays whatever it would play, crashes included.
         safe = driver.predict(g)
         if not safe:
             break
@@ -66,11 +74,13 @@ def main() -> int:
     ap.add_argument("--workers", type=int, default=10)
     ap.add_argument("--seed-offset", type=int, default=3000)
     ap.add_argument("--out", default="results/dataset_board.npz")
+    ap.add_argument("--driver", choices=("student", "echo"), default="student")
+    ap.add_argument("--echo", default="results/student_board.npz")
     a = ap.parse_args()
 
     t0 = time.perf_counter()
     with ProcessPoolExecutor(max_workers=a.workers) as pool:
-        games = list(pool.map(_job, [(a.seed_offset + i, a.max_steps)
+        games = list(pool.map(_job, [(a.seed_offset + i, a.max_steps, a.driver, a.echo)
                                      for i in range(a.games)]))
     wall = time.perf_counter() - t0
 
@@ -84,7 +94,7 @@ def main() -> int:
     np.savez_compressed(out, **data)
     usd = sum(g["usd"] for g in games)
     print(f"{len(boards):,} states -> {out}")
-    print(f"  teacher score {np.mean([g['score'] for g in games]):.1f}")
+    print(f"  driver score {np.mean([g['score'] for g in games]):.1f}")
     print(f"  wall {wall:.0f}s  ${usd:.3f}  {len(boards)/max(wall,1):.0f} states/s")
     return 0
 

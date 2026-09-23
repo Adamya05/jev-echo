@@ -11,12 +11,13 @@ from sysone.snake import boardnet as B
 mx.set_default_device(mx.cpu)
 
 ap = argparse.ArgumentParser()
-ap.add_argument("--data", default="results/dataset_board.npz")
+ap.add_argument("--data", nargs="+", default=["results/dataset_board.npz"])
 ap.add_argument("--out", default="results/student_board.npz")
 a = ap.parse_args()
-d = np.load(a.data)
-X = B.encode_many(d["boards"])
-M, T = d["mask"], d["target"]
+ds = [np.load(p) for p in a.data]
+X = B.encode_many(np.concatenate([d["boards"] for d in ds]))
+M = np.concatenate([d["mask"] for d in ds])
+T = np.concatenate([d["target"] for d in ds])
 
 t0 = time.perf_counter()
 model, hist = B.train(X, M, T, epochs=90)

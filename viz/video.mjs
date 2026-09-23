@@ -10,9 +10,8 @@ import { pathToFileURL } from "node:url";
 const OUT = resolve(process.argv[2] || "echo.mp4");
 const CHROME = "/Applications/Google Chrome.app/Contents/MacOS/Google Chrome";
 const PAGE = pathToFileURL(resolve("docs/index.html")).href + "?capture&theme=dark&mode=net";
-const W = 1280, H = 720, DPR = 1.5, FPS = 30;
+const W = 1280, H = 820, DPR = 1.5, FPS = 30;
 const OPEN_S = 4, HOLD_S = 3;              // 1x opening, then 5x, then hold on the card
-const KEEP_H = 712;                        // headline and lede, nothing below
 
 const frames = mkdtempSync(join(tmpdir(), "echo-frames-"));
 const profile = mkdtempSync(join(tmpdir(), "echo-chrome-"));
@@ -49,6 +48,8 @@ await evaluate("document.fonts.ready.then(() => true)");
 await sleep(300);
 
 const beat = await evaluate("window.__beat");
+// Crop just below the line under the headline.
+const keepH = Math.round(await evaluate("document.querySelector('.lede').getBoundingClientRect().bottom + 20") * DPR / 2) * 2;
 const fastS = (beat / 1000 - OPEN_S) / 5;
 const plan = [];
 for (let f = 0; f < OPEN_S * FPS; f++) plan.push([f / FPS * 1000, 1]);
@@ -68,7 +69,7 @@ for (let f = 0; f < HOLD_S * FPS; f++)
 ws.close(); chrome.kill();
 
 await new Promise((res, rej) => spawn("ffmpeg", ["-y", "-loglevel", "error", "-framerate", String(FPS),
-  "-i", join(frames, "f%05d.png"), "-vf", `crop=iw:${KEEP_H * DPR}:0:0`, "-c:v", "libx264", "-pix_fmt", "yuv420p", "-crf", "18",
+  "-i", join(frames, "f%05d.png"), "-vf", `crop=iw:${keepH}:0:0`, "-c:v", "libx264", "-pix_fmt", "yuv420p", "-crf", "18",
   "-preset", "slow", "-movflags", "+faststart", OUT], { stdio: "inherit" })
   .on("exit", c => c === 0 ? res() : rej(new Error("ffmpeg " + c))));
 rmSync(frames, { recursive: true, force: true }); rmSync(profile, { recursive: true, force: true });
