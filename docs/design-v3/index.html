@@ -1,0 +1,518 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="description" content="Echo learns to play Snake like Jev, then uses the speed it gains to search ahead.">
+<title>Echo learns to play like Jev</title>
+<style>
+:root{
+  --bg:#050607;
+  --panel:#0c0e10;
+  --panel2:#111417;
+  --text:#f5f7f7;
+  --muted:#91989f;
+  --line:rgba(255,255,255,.10);
+  --jev:#8b8cff;
+  --echo:#55e6a5;
+  --danger:#ff6b61;
+  --food:#ffcc57;
+  --max:1180px;
+}
+*{box-sizing:border-box}
+html{scroll-behavior:smooth;background:var(--bg)}
+body{
+  margin:0;background:var(--bg);color:var(--text);
+  font-family:Inter,ui-sans-serif,-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;
+  -webkit-font-smoothing:antialiased;
+}
+a{color:inherit}
+.wrap{width:min(calc(100% - 40px),var(--max));margin:auto}
+nav{
+  position:sticky;top:0;z-index:50;height:64px;
+  display:flex;align-items:center;justify-content:space-between;
+  background:rgba(5,6,7,.72);backdrop-filter:blur(18px);
+  border-bottom:1px solid var(--line)
+}
+.brand{font-weight:750;letter-spacing:-.04em}
+.navlinks{display:flex;gap:22px;font-size:13px;color:var(--muted)}
+.navlinks a{text-decoration:none}.navlinks a:hover{color:var(--text)}
+
+.hero{
+  min-height:calc(100vh - 64px);
+  display:flex;flex-direction:column;justify-content:center;
+  padding:80px 0 100px;text-align:center;
+}
+.eyebrow{
+  font-size:13px;color:var(--echo);font-weight:750;letter-spacing:.12em;
+  text-transform:uppercase;margin-bottom:24px
+}
+h1{
+  font-size:clamp(62px,9vw,132px);line-height:.88;letter-spacing:-.078em;
+  margin:0 auto;max-width:1080px;font-weight:760
+}
+.hero p{
+  color:#b4bac0;font-size:clamp(19px,2.2vw,27px);line-height:1.42;
+  max-width:790px;margin:34px auto 0
+}
+.hero strong{color:var(--text)}
+.scroll-cue{margin-top:78px;color:#666d73;font-size:12px;letter-spacing:.14em;text-transform:uppercase}
+.chev{display:block;font-size:22px;animation:float 1.8s ease-in-out infinite;margin-top:8px}
+@keyframes float{50%{transform:translateY(6px)}}
+
+.chapter{padding:150px 0;border-top:1px solid var(--line)}
+.chapter-intro{max-width:900px;margin-bottom:74px}
+.kicker{font-size:12px;letter-spacing:.14em;text-transform:uppercase;color:var(--muted);font-weight:750;margin-bottom:22px}
+h2{
+  font-size:clamp(46px,6.5vw,88px);line-height:.97;letter-spacing:-.065em;
+  margin:0;font-weight:740
+}
+.chapter-intro p{font-size:20px;line-height:1.5;color:#aeb4ba;max-width:720px;margin:28px 0 0}
+
+.decision-grid{
+  display:grid;grid-template-columns:1fr .9fr;gap:60px;align-items:center
+}
+.board-wrap{display:flex;justify-content:center}
+.board{
+  width:min(100%,520px);aspect-ratio:1;border-radius:26px;padding:18px;
+  background:linear-gradient(145deg,#15191c,#0d1012);
+  border:1px solid rgba(255,255,255,.12);
+  box-shadow:0 45px 100px rgba(0,0,0,.38)
+}
+.grid{display:grid;grid-template-columns:repeat(10,1fr);gap:4px;width:100%;height:100%}
+.cell{border-radius:6px;background:#1b2024;position:relative}
+.cell.body{background:#466b5a}
+.cell.head{background:var(--echo)}
+.cell.food{background:var(--food);box-shadow:0 0 25px rgba(255,204,87,.22)}
+.cell.food:after{content:"";position:absolute;inset:30%;border-radius:50%;background:#fff2bd}
+
+.dist-card{
+  background:linear-gradient(180deg,#111417,#0b0d0f);
+  border:1px solid var(--line);border-radius:26px;padding:34px
+}
+.dist-title{display:flex;align-items:center;justify-content:space-between;margin-bottom:34px}
+.model-name{font-size:22px;font-weight:720;letter-spacing:-.03em}
+.badge{font-size:11px;color:var(--muted);border:1px solid var(--line);padding:7px 9px;border-radius:99px}
+.prob{display:grid;grid-template-columns:58px 1fr 58px;gap:14px;align-items:center;margin:17px 0;font-size:14px}
+.track{height:11px;background:#20252a;border-radius:999px;overflow:hidden}
+.fill{height:100%;width:0;border-radius:inherit;background:var(--jev);transition:width 1.15s cubic-bezier(.2,.7,.2,1)}
+.echo .fill{background:var(--echo)}
+.pct{text-align:right;font-variant-numeric:tabular-nums;color:#cfd3d6}
+.note{font-size:13px;color:#7e858b;line-height:1.45;margin-top:26px}
+
+.reveal{opacity:0;transform:translateY(28px);transition:opacity .85s ease,transform .85s cubic-bezier(.2,.7,.2,1)}
+.reveal.on{opacity:1;transform:none}
+.reveal.delay1{transition-delay:.12s}.reveal.delay2{transition-delay:.24s}
+
+.split-title{
+  display:grid;grid-template-columns:1fr 1fr;gap:28px;margin-top:60px
+}
+.big-claim{
+  border-top:1px solid var(--line);padding-top:24px;
+  font-size:clamp(34px,4.6vw,64px);line-height:1;letter-spacing:-.055em;font-weight:720
+}
+.big-claim span{display:block;color:var(--muted);font-size:15px;letter-spacing:0;font-weight:500;margin-top:16px;line-height:1.45}
+
+.agreement{
+  min-height:80vh;display:flex;flex-direction:column;justify-content:center;text-align:center
+}
+.agreement .number{
+  font-size:clamp(120px,24vw,320px);line-height:.72;letter-spacing:-.085em;
+  font-weight:760;color:var(--echo)
+}
+.agreement p{font-size:clamp(22px,3vw,34px);color:#b3b9be;margin:42px auto 0;max-width:760px}
+.agreement p strong{color:var(--text)}
+
+.speed-stage{
+  min-height:95vh;display:grid;align-items:center
+}
+.speed-grid{display:grid;grid-template-columns:1fr 1fr;gap:20px}
+.speed-card{
+  min-height:430px;border-radius:30px;padding:38px;
+  background:var(--panel);border:1px solid var(--line);
+  display:flex;flex-direction:column;justify-content:space-between
+}
+.speed-card.echo-card{background:linear-gradient(150deg,#10251c,#0a100d);border-color:rgba(85,230,165,.22)}
+.speed-card .label{font-size:16px;color:var(--muted)}
+.speed-card .huge{font-size:clamp(74px,10vw,150px);line-height:.8;letter-spacing:-.08em;font-weight:760}
+.speed-card .huge small{font-size:.20em;letter-spacing:-.02em;color:var(--muted)}
+.speed-card .sub{font-size:16px;color:var(--muted)}
+.x800{
+  text-align:center;font-size:clamp(62px,11vw,150px);letter-spacing:-.075em;
+  font-weight:760;margin:100px 0 20px
+}
+.x800 em{font-style:normal;color:var(--echo)}
+.thesis{
+  max-width:980px;margin:0 auto;text-align:center;
+  font-size:clamp(38px,5.6vw,76px);line-height:1.02;letter-spacing:-.06em;font-weight:720
+}
+.thesis .dim{color:#666d73}
+
+.search-scene{position:relative}
+.search-head{max-width:900px;margin-bottom:80px}
+.search-head p{font-size:20px;color:#aeb4ba;max-width:700px;line-height:1.5}
+.example{
+  display:grid;grid-template-columns:.72fr 1.28fr;gap:44px;align-items:start
+}
+.mini-board{position:sticky;top:100px}
+.mini-board .board{max-width:390px}
+.tree-panel{
+  min-height:820px;border-radius:28px;background:linear-gradient(180deg,#0d1012,#080a0b);
+  border:1px solid var(--line);padding:44px;overflow:hidden
+}
+.tree-meta{display:flex;justify-content:space-between;gap:20px;margin-bottom:54px}
+.tree-meta strong{font-size:20px}.tree-meta span{font-size:13px;color:var(--muted)}
+.tree{
+  position:relative;height:430px;
+  display:flex;flex-direction:column;align-items:center;justify-content:flex-start
+}
+.level{display:flex;justify-content:center;gap:48px;margin:22px 0;position:relative;z-index:2}
+.node{
+  width:26px;height:26px;border-radius:50%;background:#23292e;border:1px solid #394047;
+  opacity:0;transform:scale(.4);transition:opacity .35s ease,transform .5s cubic-bezier(.2,.9,.3,1)
+}
+.tree-panel.on .node{opacity:1;transform:scale(1)}
+.node.root{background:var(--echo);border-color:var(--echo)}
+.node.dead{background:var(--danger);border-color:var(--danger);box-shadow:0 0 35px rgba(255,107,97,.20)}
+.level:nth-child(3) .node{transition-delay:.25s}
+.level:nth-child(5) .node{transition-delay:.55s}
+.level:nth-child(7) .node{transition-delay:.85s}
+.branchline{color:#30373d;letter-spacing:13px;text-align:center;font-family:monospace;opacity:0;transition:opacity .4s ease}
+.tree-panel.on .branchline{opacity:1}
+.tree-panel.on .branchline:nth-child(2){transition-delay:.18s}
+.tree-panel.on .branchline:nth-child(4){transition-delay:.48s}
+.tree-panel.on .branchline:nth-child(6){transition-delay:.78s}
+.tree-stats{display:grid;grid-template-columns:repeat(3,1fr);border-top:1px solid var(--line);margin-top:32px}
+.tree-stat{padding:24px 18px;border-right:1px solid var(--line)}
+.tree-stat:last-child{border-right:0}.tree-stat strong{font-size:36px;letter-spacing:-.05em}
+.tree-stat span{display:block;color:var(--muted);font-size:12px;margin-top:4px}
+
+.flip{
+  margin-top:30px;border-radius:24px;background:#101315;border:1px solid var(--line);padding:32px
+}
+.flip-title{font-size:15px;color:var(--muted);margin-bottom:24px}
+.flip-grid{display:grid;grid-template-columns:1fr 70px 1fr;gap:20px;align-items:center}
+.choice{padding:24px;border-radius:18px;background:#0a0c0e}
+.choice .who{font-size:12px;text-transform:uppercase;letter-spacing:.12em;color:var(--muted)}
+.choice .move{font-size:52px;line-height:1;font-weight:750;letter-spacing:-.055em;margin:12px 0 6px}
+.choice .conf{font-size:14px;color:var(--muted)}
+.arrow{text-align:center;color:#626970;font-size:28px}
+.choice.bad .move{color:var(--jev)} .choice.good .move{color:var(--echo)}
+
+.statement{
+  min-height:90vh;display:flex;align-items:center;text-align:center
+}
+.statement h2{max-width:1050px;margin:auto}
+.statement .accent{color:var(--echo)}
+
+.results{
+  padding-bottom:170px
+}
+.result-bars{margin-top:74px;display:grid;gap:34px}
+.result-row{display:grid;grid-template-columns:190px 1fr 90px;gap:24px;align-items:center}
+.result-row .name{font-size:18px}
+.rtrack{height:24px;background:#171b1e;border-radius:999px;overflow:hidden}
+.rfill{height:100%;width:0;border-radius:inherit;background:#555c62;transition:width 1.25s cubic-bezier(.2,.75,.2,1)}
+.rfill.echo{background:#3d8e68}.rfill.search{background:var(--echo)}
+.score{text-align:right;font-size:26px;font-weight:720;font-variant-numeric:tabular-nums}
+.result-note{margin-top:44px;display:flex;justify-content:space-between;gap:30px;color:var(--muted);font-size:14px}
+.result-note strong{color:var(--echo)}
+
+.training-grid{
+  margin-top:64px;display:grid;grid-template-columns:repeat(3,1fr);gap:18px
+}
+.train-card{border:1px solid var(--line);border-radius:22px;padding:28px;background:var(--panel)}
+.train-card .n{font-size:12px;color:var(--muted);letter-spacing:.12em}
+.train-card h3{font-size:26px;letter-spacing:-.04em;margin:28px 0 10px}
+.train-card p{color:var(--muted);font-size:15px;line-height:1.5;margin:0}
+.metrics{
+  margin-top:22px;border:1px solid var(--line);border-radius:22px;overflow:hidden;
+  display:grid;grid-template-columns:repeat(3,1fr)
+}
+.metric{padding:30px;border-right:1px solid var(--line);background:#0a0c0e}
+.metric:last-child{border-right:0}.metric strong{font-size:40px;letter-spacing:-.05em}
+.metric span{display:block;color:var(--muted);font-size:13px;margin-top:7px}
+
+footer{border-top:1px solid var(--line);padding:44px 0 64px;color:var(--muted);font-size:13px}
+.footer-row{display:flex;justify-content:space-between;gap:24px}
+footer a{text-decoration:none;color:#c4c9cd}
+.fineprint{max-width:850px;line-height:1.6;margin-top:28px;color:#687078}
+
+@media(max-width:850px){
+  .decision-grid,.example{grid-template-columns:1fr}
+  .split-title,.speed-grid{grid-template-columns:1fr}
+  .mini-board{position:relative;top:auto}
+  .training-grid,.metrics{grid-template-columns:1fr}
+  .metric,.tree-stat{border-right:0;border-bottom:1px solid var(--line)}
+  .metric:last-child,.tree-stat:last-child{border-bottom:0}
+  .tree-stats{grid-template-columns:1fr}
+  .result-row{grid-template-columns:105px 1fr 58px;gap:12px}
+}
+@media(max-width:620px){
+  .wrap{width:min(calc(100% - 28px),var(--max))}
+  .navlinks a:first-child{display:none}
+  .hero{padding-top:50px}h1{font-size:60px}
+  .chapter{padding:105px 0}
+  .board{padding:12px;border-radius:20px}.grid{gap:3px}.cell{border-radius:4px}
+  .dist-card,.tree-panel{padding:22px}
+  .speed-card{min-height:310px}
+  .flip-grid{grid-template-columns:1fr}.arrow{transform:rotate(90deg)}
+  .result-note,.footer-row{flex-direction:column}
+}
+
+@media(prefers-reduced-motion:reduce){
+  *,*::before,*::after{animation:none!important;transition:none!important;scroll-behavior:auto!important}
+  .reveal{opacity:1;transform:none}.fill,.rfill{width:var(--final)!important}.node,.branchline{opacity:1!important;transform:none!important}
+}
+</style>
+</head>
+<body>
+<div class="wrap">
+<nav>
+  <div class="brand">Echo</div>
+  <div class="navlinks"><a href="#how">How it works</a><a href="https://github.com/Adamya05/jev-echo">GitHub ↗</a></div>
+</nav>
+
+<header class="hero">
+  <div class="eyebrow reveal">Jev → Echo</div>
+  <h1 class="reveal delay1">Echo learns to<br>play like Jev.</h1>
+  <p class="reveal delay2">A <strong>22,212-parameter</strong> local model learns Jev’s judgement on Snake — then uses the speed it gains to do something Jev can’t afford to do hundreds of times per move.</p>
+  <div class="scroll-cue reveal delay2">See one decision unfold <span class="chev">↓</span></div>
+</header>
+
+<section class="chapter" id="how">
+  <div class="chapter-intro reveal">
+    <div class="kicker">01 · Jev decides</div>
+    <h2>One board in.<br>One distribution out.</h2>
+    <p>Jev sees the board, head and food positions, a few basic state values, and an instruction to reach the food without getting trapped. It returns probabilities over the available directions.</p>
+  </div>
+
+  <div class="decision-grid">
+    <div class="board-wrap reveal"><div class="board"><div class="grid js-board"></div></div></div>
+    <div class="dist-card reveal delay1 animate-bars">
+      <div class="dist-title"><div class="model-name" style="color:var(--jev)">Jev</div><span class="badge">real recorded decision</span></div>
+      <div class="prob"><span>UP</span><span class="track"><span class="fill" data-width="5"></span></span><span class="pct">5.0%</span></div>
+      <div class="prob"><span>LEFT</span><span class="track"><span class="fill" data-width=".4"></span></span><span class="pct">0.0%</span></div>
+      <div class="prob"><span>RIGHT</span><span class="track"><span class="fill" data-width="95"></span></span><span class="pct">95.0%</span></div>
+      <div class="note">On this position, Jev is almost certain: go right.</div>
+    </div>
+  </div>
+</section>
+
+<section class="chapter">
+  <div class="chapter-intro reveal">
+    <div class="kicker">02 · Echo learns</div>
+    <h2>Teach a tiny model to play like Jev.</h2>
+    <p>Echo never trains on score or game outcomes. Its target is Jev’s judgement: given this board, what probability distribution would Jev produce?</p>
+  </div>
+
+  <div class="decision-grid">
+    <div class="dist-card reveal animate-bars">
+      <div class="dist-title"><div class="model-name" style="color:var(--jev)">Jev</div><span class="badge">teacher</span></div>
+      <div class="prob"><span>UP</span><span class="track"><span class="fill" data-width="5"></span></span><span class="pct">5.0%</span></div>
+      <div class="prob"><span>LEFT</span><span class="track"><span class="fill" data-width=".4"></span></span><span class="pct">0.0%</span></div>
+      <div class="prob"><span>RIGHT</span><span class="track"><span class="fill" data-width="95"></span></span><span class="pct">95.0%</span></div>
+    </div>
+    <div class="dist-card echo reveal delay1 animate-bars">
+      <div class="dist-title"><div class="model-name" style="color:var(--echo)">Echo</div><span class="badge">student</span></div>
+      <div class="prob"><span>UP</span><span class="track"><span class="fill" data-width="7.5"></span></span><span class="pct">7.5%</span></div>
+      <div class="prob"><span>LEFT</span><span class="track"><span class="fill" data-width=".6"></span></span><span class="pct">0.6%</span></div>
+      <div class="prob"><span>RIGHT</span><span class="track"><span class="fill" data-width="91.9"></span></span><span class="pct">91.9%</span></div>
+    </div>
+  </div>
+
+  <div class="split-title">
+    <div class="big-claim reveal">Same board state.<span>Same underlying information, encoded differently: Jev reads the board as text; Echo reads body, head and food as three 10×10 planes.</span></div>
+    <div class="big-claim reveal delay1">Same top move.<span>Here, both independently choose RIGHT with very similar confidence.</span></div>
+  </div>
+</section>
+
+<section class="agreement">
+  <div class="kicker reveal">Across held-out boards</div>
+  <div class="number reveal count" data-target="93" data-suffix="%">0%</div>
+  <p class="reveal delay1">Echo picks the <strong>same top move as Jev</strong> 93% of the time.</p>
+</section>
+
+<section class="chapter speed-stage">
+  <div>
+    <div class="chapter-intro reveal">
+      <div class="kicker">03 · The useful part</div>
+      <h2>Now the judgement is cheap.</h2>
+    </div>
+
+    <div class="speed-grid">
+      <div class="speed-card reveal">
+        <div class="label" style="color:var(--jev)">Jev</div>
+        <div class="huge">159 <small>ms</small></div>
+        <div class="sub">one decision · held-out run</div>
+      </div>
+      <div class="speed-card echo-card reveal delay1">
+        <div class="label" style="color:var(--echo)">Echo</div>
+        <div class="huge">0.20 <small>ms</small></div>
+        <div class="sub">one local model call · Apple M4</div>
+      </div>
+    </div>
+
+    <div class="x800 reveal">about <em>800×</em> faster.</div>
+  </div>
+</section>
+
+<section class="chapter">
+  <div class="thesis reveal"><span class="dim">A narrow expert buys you speed.</span><br>What you do with that speed depends on the problem.</div>
+</section>
+
+<section class="chapter search-scene">
+  <div class="search-head reveal">
+    <div class="kicker">04 · In Snake, spend it on search</div>
+    <h2>Let Echo look ahead.</h2>
+    <p>Return to the same recorded position. Jev says RIGHT. Echo says RIGHT. But now Echo can score hundreds of simulated future boards before committing.</p>
+  </div>
+
+  <div class="example">
+    <div class="mini-board reveal">
+      <div class="board"><div class="grid js-board"></div></div>
+      <div class="flip">
+        <div class="flip-title">The decision changes after search</div>
+        <div class="flip-grid">
+          <div class="choice bad">
+            <div class="who">Echo · immediate</div>
+            <div class="move">RIGHT</div>
+            <div class="conf">91.9%</div>
+          </div>
+          <div class="arrow">→</div>
+          <div class="choice good">
+            <div class="who">Echo + search</div>
+            <div class="move">UP</div>
+            <div class="conf">92.7%</div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="tree-panel reveal">
+      <div class="tree-meta"><strong>Search expands</strong><span>schematic view of the recorded tree</span></div>
+      <div class="tree">
+        <div class="level"><span class="node root"></span></div>
+        <div class="branchline">╱ │ ╲</div>
+        <div class="level"><span class="node"></span><span class="node"></span><span class="node"></span></div>
+        <div class="branchline">╱╲ ╱╲ ╱╲</div>
+        <div class="level"><span class="node"></span><span class="node"></span><span class="node"></span><span class="node dead"></span><span class="node"></span><span class="node"></span></div>
+        <div class="branchline">·················</div>
+        <div class="level"><span class="node"></span><span class="node"></span><span class="node"></span><span class="node"></span><span class="node dead"></span><span class="node"></span><span class="node"></span><span class="node"></span></div>
+      </div>
+      <div class="tree-stats">
+        <div class="tree-stat"><strong class="count" data-target="363">0</strong><span>future boards scored</span></div>
+        <div class="tree-stat"><strong class="count" data-target="7">0</strong><span>moves deep</span></div>
+        <div class="tree-stat"><strong class="count" data-target="75" data-suffix=" ms">0 ms</strong><span>recorded search time</span></div>
+      </div>
+      <div class="note" style="margin-top:28px">The RIGHT branch eventually evaluates to <strong style="color:var(--danger)">−15</strong>: the snake dies. Search drives RIGHT’s final probability to <strong>0%</strong>.</div>
+    </div>
+  </div>
+</section>
+
+<section class="statement">
+  <h2 class="reveal">Distillation didn't just make the same decision faster.<br><span class="accent">It made a different algorithm affordable.</span></h2>
+</section>
+
+<section class="chapter results">
+  <div class="chapter-intro reveal">
+    <div class="kicker">05 · Held-out result</div>
+    <h2>Imitation ties.<br>Imitation + search changes the game.</h2>
+    <p>Twenty boards that no training or tuning touched. Same seeds for every player. A crash ends the game.</p>
+  </div>
+
+  <div class="result-bars animate-results">
+    <div class="result-row"><div class="name">Jev</div><div class="rtrack"><div class="rfill" data-width="19.3"></div></div><div class="score">7.5</div></div>
+    <div class="result-row"><div class="name">Echo</div><div class="rtrack"><div class="rfill echo" data-width="20.4"></div></div><div class="score">7.9</div></div>
+    <div class="result-row"><div class="name">Echo + search</div><div class="rtrack"><div class="rfill search" data-width="100"></div></div><div class="score">38.8</div></div>
+  </div>
+
+  <div class="result-note reveal">
+    <span>Average food eaten · boards 100–119</span>
+    <strong>Echo + search won all 20 paired boards.</strong>
+  </div>
+</section>
+
+<section class="chapter">
+  <div class="chapter-intro reveal">
+    <div class="kicker">06 · How Echo learned</div>
+    <h2>Copy Jev. Then learn from Echo's mistakes.</h2>
+    <p>Copying only the states Jev visits isn't enough: one wrong move can send Echo somewhere the training set never covered. So Echo drives, Jev labels the states Echo actually reaches, and Echo retrains.</p>
+  </div>
+
+  <div class="training-grid">
+    <div class="train-card reveal"><div class="n">01 · LABEL</div><h3>Ask Jev</h3><p>Collect Jev’s full move distribution on raw Snake boards.</p></div>
+    <div class="train-card reveal delay1"><div class="n">02 · DISTILL</div><h3>Train Echo</h3><p>A tiny convolutional network learns to reproduce those distributions.</p></div>
+    <div class="train-card reveal delay2"><div class="n">03 · RECOVER</div><h3>Let Echo drive</h3><p>Jev labels the states created by Echo’s own mistakes. Retrain twice.</p></div>
+  </div>
+
+  <div class="metrics reveal">
+    <div class="metric"><strong>38,199</strong><span>Jev-labelled boards</span></div>
+    <div class="metric"><strong>$0.77</strong><span>total Jev labelling cost</span></div>
+    <div class="metric"><strong>87 KB</strong><span>final Echo model</span></div>
+  </div>
+</section>
+
+<section class="statement">
+  <h2 class="reveal"><span class="dim">Compress judgement until it's cheap enough to use differently.</span><br><span class="accent">Snake spends the gain on search.</span></h2>
+</section>
+
+<footer>
+  <div class="footer-row"><span>Echo · Jev distillation experiment</span><span><a href="https://github.com/Adamya05/jev-echo">Code & reproduction ↗</a></span></div>
+  <div class="fineprint">This is one narrow task: a 10×10 Snake board with a tiny action space. Search is especially useful here because Snake can cheaply simulate future states. The held-out comparison uses 20 boards. Timings were recorded on an Apple M4 and vary by run. The example decision above is board 0, move 32; the benchmark averages are held-out boards 100–119.</div>
+</footer>
+</div>
+
+<script>
+const BOARD = [
+"..........","..........","..........","..........","..........",
+"......o...","..@oooo.*.","..oo......","..........",".........."
+].join("");
+
+document.querySelectorAll(".js-board").forEach(grid=>{
+  [...BOARD].forEach(ch=>{
+    const d=document.createElement("div");
+    d.className="cell"+(ch==="o"?" body":ch==="@"?" head":ch==="*"?" food":"");
+    grid.appendChild(d);
+  });
+});
+
+const io=new IntersectionObserver(entries=>{
+  entries.forEach(e=>{
+    if(!e.isIntersecting) return;
+    e.target.classList.add("on");
+
+    if(e.target.classList.contains("animate-bars")){
+      e.target.querySelectorAll(".fill").forEach((el,i)=>{
+        setTimeout(()=>el.style.width=el.dataset.width+"%",120+i*90);
+      });
+    }
+    if(e.target.classList.contains("animate-results")){
+      e.target.querySelectorAll(".rfill").forEach((el,i)=>{
+        setTimeout(()=>el.style.width=el.dataset.width+"%",120+i*170);
+      });
+    }
+    e.target.querySelectorAll(".count").forEach(runCount);
+    if(e.target.classList.contains("count")) runCount(e.target);
+    io.unobserve(e.target);
+  });
+},{threshold:.22});
+
+document.querySelectorAll(".reveal,.animate-bars,.animate-results,.tree-panel,.count").forEach(el=>io.observe(el));
+
+function runCount(el){
+  if(el.dataset.done) return;
+  el.dataset.done="1";
+  const target=Number(el.dataset.target||0), suffix=el.dataset.suffix||"";
+  const start=performance.now(), dur=950;
+  function frame(t){
+    const p=Math.min(1,(t-start)/dur);
+    const eased=1-Math.pow(1-p,3);
+    el.textContent=Math.round(target*eased)+suffix;
+    if(p<1) requestAnimationFrame(frame);
+  }
+  requestAnimationFrame(frame);
+}
+</script>
+</body>
+</html>
