@@ -27,21 +27,21 @@
     --ink:#0b0b0b; --ink-soft:#4f4e4a; --ink-faint:#76756e;
     --rule:#dcdcd4; --rule-firm:#bfbfb6;
     --cloud:#c94f1d; --local:#1d63b8; --deep:#0f7a52;
-    --snake:#9d9c94; --head:#0b0b0b; --food:#0b0b0b;
+    --snake:#8f8e86; --head:#0b0b0b; --food:#0b0b0b;
   }
   @media (prefers-color-scheme:dark){ :root:not([data-theme="light"]){
     --ground:#121211; --surface:#1a1a19; --sunken:#0d0d0c; --paper:#1f1f1d;
     --ink:#f7f7f2; --ink-soft:#bdbcb3; --ink-faint:#8d8c84;
     --rule:#2a2a27; --rule-firm:#3c3c37;
     --cloud:#f0855a; --local:#69a6f0; --deep:#4fc79a;
-    --snake:#6b6a64; --head:#f7f7f2; --food:#f7f7f2;
+    --snake:#6f6e67; --head:#f7f7f2; --food:#f7f7f2;
   }}
   :root[data-theme="dark"]{
     --ground:#121211; --surface:#1a1a19; --sunken:#0d0d0c; --paper:#1f1f1d;
     --ink:#f7f7f2; --ink-soft:#bdbcb3; --ink-faint:#8d8c84;
     --rule:#2a2a27; --rule-firm:#3c3c37;
     --cloud:#f0855a; --local:#69a6f0; --deep:#4fc79a;
-    --snake:#6b6a64; --head:#f7f7f2; --food:#f7f7f2;
+    --snake:#6f6e67; --head:#f7f7f2; --food:#f7f7f2;
   }
 
   *{box-sizing:border-box}
@@ -147,10 +147,7 @@
          border-radius:5px;padding:5px;aspect-ratio:1}
   .cell{border-radius:1px}
   .cell.b{background:var(--snake)} .cell.h{background:var(--head)}
-  .cell.f{border-radius:50%;box-shadow:inset 0 0 0 2px var(--food);transform:scale(.8)}
-  .panel.local .cell.b{background:color-mix(in srgb,var(--local) 75%,var(--sunken))}
-  .panel.cloud .cell.b{background:color-mix(in srgb,var(--cloud) 75%,var(--sunken))}
-  .panel.deep .cell.b{background:color-mix(in srgb,var(--deep) 75%,var(--sunken))}
+  .cell.f{background:var(--food);border-radius:50%;transform:scale(.62)}
   .heads{display:grid;grid-template-columns:1fr 1fr;gap:12px}
   .metric .v{font-family:Archivo,sans-serif;font-weight:800;line-height:1;
              font-size:clamp(26px,3.6vw,34px);letter-spacing:-.03em;
@@ -171,62 +168,69 @@
     .grid .metric .v{font-size:24px} .grid .metric .k{font-size:11.5px;margin-top:3px}
   }
 
-  /* sections */
-  section{margin-top:72px}
-  .note{font-size:14px;color:var(--ink-faint);margin-top:10px}
+  /* sections: headings in a left column, every block in one content column */
+  section{display:grid;grid-template-columns:196px minmax(0,1fr);column-gap:48px;
+          margin-top:96px;padding-top:28px;border-top:1px solid var(--rule)}
+  section > h2{margin:0;font-size:24px;line-height:1.15}
+  .sbody{min-width:0}
+  .sbody > p{margin:0 0 14px;font-size:17px;line-height:1.6;color:var(--ink);max-width:62ch}
+  .sbody > p:last-child{margin-bottom:0}
+  .sbody > p.lede{color:var(--ink-soft)}
+  .sbody > p.note{font-size:15px;color:var(--ink-soft);margin-top:22px}
+  footer{padding-left:244px}
+  @media (max-width:760px){
+    section{display:block;margin-top:64px;padding-top:20px}
+    section > h2{margin-bottom:14px}
+    footer{padding-left:0}
+  }
 
-  /* how they play */
-  .flow{display:grid;gap:30px;margin-top:22px}
-  .frow{display:grid;grid-template-columns:280px 96px 170px 56px minmax(0,1fr);align-items:center}
-  .paper{position:relative;background:var(--paper);border:1px solid var(--rule-firm);border-radius:3px;
-         padding:12px 14px}
-  .paper.justboard::after{display:none}
-  .paper::after{content:"";position:absolute;top:-1px;right:-1px;width:14px;height:14px;
-         background:linear-gradient(45deg,var(--rule-firm) 50%,var(--ground) 50%);border-bottom-left-radius:2px}
-  .pin{display:flex;gap:12px;align-items:flex-start}
-  .mini{width:96px;flex:none;padding:3px;border-radius:3px}
-  .meta{font:400 11px/1.55 "JetBrains Mono",monospace;color:var(--ink-soft);white-space:nowrap}
-  .prompt{font-size:12.5px;line-height:1.4;color:var(--ink-soft);margin-top:10px}
-  .justboard{display:flex;flex-direction:column;align-items:center;gap:8px;width:150px;justify-self:end}
-  .justboard .mini{width:110px}
-  .cap{font-size:12.5px;color:var(--ink-soft)}
-  .arr{position:relative;display:flex;flex-direction:column;align-items:stretch;padding:0 8px}
-  .arr span{font:700 12.5px/1 "JetBrains Mono",monospace;text-align:center;white-space:nowrap}
-  .arr span:first-child{position:absolute;left:0;right:0;bottom:calc(50% + 8px)}
+  /* how they play: one table -- what it sees, the model, what it answers */
+  .flow{margin-top:26px}
+  .fhead,.frow{display:grid;grid-template-columns:232px 60px 150px 34px minmax(0,1fr);align-items:center}
+  .fhead{font:500 12px/1 "JetBrains Mono",monospace;color:var(--ink-faint);padding-bottom:10px}
+  .fhead span:nth-child(2){grid-column:3} .fhead span:nth-child(3){grid-column:5}
+  .frow{padding:22px 0;border-top:1px solid var(--rule)}
+  .paper{position:relative;display:grid;grid-template-columns:auto minmax(0,1fr);gap:10px 12px;align-items:start;background:var(--paper);
+         border:1px solid var(--rule-firm);border-radius:3px;padding:10px 12px;min-height:102px}
+  .paper::after{content:"";position:absolute;top:-1px;right:-1px;width:12px;height:12px;
+         background:linear-gradient(45deg,var(--rule-firm) 50%,var(--ground) 50%)}
+  .mini{width:80px;flex:none;padding:3px;border-radius:3px}
+  .sees{font:400 11.5px/1.5 "JetBrains Mono",monospace;color:var(--ink-soft);margin:0;padding:0;list-style:none}
+  .sees li+li{margin-top:2px}
+  .paper .q{grid-column:1/-1;font:400 12.5px/1.4 "Source Sans 3",sans-serif;color:var(--ink-soft);margin:0}
+  .arr{position:relative;height:100%;display:flex;align-items:center;padding:0 6px}
   .arr svg{display:block;width:100%;height:10px;overflow:visible}
-  .arr .down{display:none}
+  .arr span{position:absolute;left:0;right:0;bottom:calc(50% + 9px);text-align:center;
+            font:700 12px/1 "JetBrains Mono",monospace;white-space:nowrap}
   .glyph svg{display:block;width:100%;height:auto;overflow:visible}
   .glyph text{font-family:Archivo,sans-serif;font-weight:800}
-  .glyph .gm{font:400 10.5px "JetBrains Mono",monospace}
-  .dist{display:grid;gap:7px;padding-left:4px}
-  .drow{display:grid;grid-template-columns:52px minmax(0,1fr) 44px;align-items:center;gap:8px;
-        font:400 12.5px/1 "JetBrains Mono",monospace;color:var(--ink-faint)}
-  .dtrack{height:14px;border-radius:2px;background:color-mix(in srgb,var(--rule) 60%,transparent)}
+  .glyph .gm{font:400 10.5px "JetBrains Mono",monospace;font-weight:400}
+  .dist{display:grid;gap:6px}
+  .drow{display:grid;grid-template-columns:48px minmax(0,1fr) 38px;align-items:center;gap:8px;
+        font:400 12px/1 "JetBrains Mono",monospace;color:var(--ink-faint)}
+  .drow span:last-child{text-align:right;font-variant-numeric:tabular-nums}
+  .dtrack{height:12px;border-radius:2px;background:color-mix(in srgb,var(--rule) 70%,transparent)}
   .dbar{height:100%;min-width:2px;border-radius:2px;background:var(--rule-firm)}
   .drow.top{color:var(--ink);font-weight:700}
-  .dcap{font-size:13.5px;color:var(--ink-soft);margin-top:6px}
+  .dcap{font-size:14px;line-height:1.4;color:var(--ink-soft);margin-top:8px}
   .c .drow.top .dbar{background:var(--cloud)} .l .drow.top .dbar{background:var(--local)}
   .d .drow.top .dbar{background:var(--deep)}
   .c .arr{color:var(--cloud)} .l .arr{color:var(--local)} .d .arr{color:var(--deep)}
-  .gcap{font:400 11.5px/1.3 "JetBrains Mono",monospace;color:var(--ink-soft);margin-top:4px;text-align:center;white-space:nowrap}
   @media (max-width:760px){
-    .frow{grid-template-columns:auto 44px minmax(0,150px);gap:10px 6px;align-items:center}
-    .frow .paper:not(.justboard){grid-column:1/-1}
-    .frow.c{grid-template-columns:44px minmax(0,150px) 1fr}
-    .frow .meta{white-space:normal}
-    .frow .arr{padding:0}
-    .frow .arr span:first-child{position:static;margin-bottom:2px;font-size:11.5px}
+    .fhead{display:none}
+    .frow{grid-template-columns:minmax(0,1fr) 58px 120px;row-gap:14px;padding:18px 0}
     .frow .arr.out{display:none}
-    .frow .dist{grid-column:1/-1;padding-left:0}
-    .justboard{width:auto} .justboard .mini{width:80px}
+    .frow .dist{grid-column:1/-1}
+    .paper{min-height:0} .mini{width:64px}
+    .arr span{font-size:11px}
   }
 
   /* figures + chart */
-  .figs{display:grid;grid-template-columns:1fr 1fr;gap:28px;margin-top:22px}
-  .fig{font:800 clamp(40px,7vw,68px)/1 Archivo,sans-serif;letter-spacing:-.035em}
+  .figs{display:grid;grid-template-columns:1fr 1fr;gap:36px}
+  .fig{font:800 clamp(40px,5.2vw,56px)/1 Archivo,sans-serif;letter-spacing:-.035em}
   .fig.l{color:var(--local)} .fig.d{color:var(--deep)}
-  .figs p{margin-top:10px;font-size:16px}
-  .chart{margin-top:30px;max-width:720px}
+  .figs p{margin-top:12px;font-size:16px;line-height:1.55;color:var(--ink-soft)}
+  .chart{margin-top:36px}
   .chart svg{display:block;width:100%;height:auto;overflow:visible}
   .chart .gl{stroke:var(--rule);stroke-width:1}
   .chart .tk{font:400 11.5px "JetBrains Mono",monospace;fill:var(--ink-faint)}
@@ -235,9 +239,9 @@
   .chart .pt line{stroke-width:2}
   .chart .c{fill:var(--cloud);stroke:var(--cloud)} .chart .l{fill:var(--local);stroke:var(--local)}
   .chart .d{fill:var(--deep);stroke:var(--deep)}
-  .stat{margin-top:26px;font-size:17px;color:var(--ink-soft)}
-  .stat strong{color:var(--ink);font-weight:600;white-space:nowrap}
-  .foot{font-size:13.5px;color:var(--ink-faint);margin-top:14px;max-width:72ch}
+  .sbody > p.stat{margin:32px 0 0;padding:16px 0;border-block:1px solid var(--rule);color:var(--ink)}
+  .stat strong{font-weight:700;white-space:nowrap}
+  .sbody > p.foot{font-size:13.5px;color:var(--ink-faint);margin-top:14px}
   @media (max-width:700px){ .figs{grid-template-columns:1fr;gap:22px} }
 
   /* your turn */
@@ -321,12 +325,15 @@
 
 <section>
   <h2>How they play</h2>
-  <p>A demonstrative sample.</p>
+<div class="sbody">
+  <p class="lede">A demonstrative sample.</p>
   <div class="flow" id="flow"></div>
+</div>
 </section>
 
 <section>
   <h2>Why build Echo?</h2>
+<div class="sbody">
   <div class="figs">
     <div><div class="fig l">800× faster</div>
       <p>0.2 ms a move against ~160 ms, and Echo alone picks the same move as Jev 93% of the time.*</p></div>
@@ -337,17 +344,21 @@
     roughly <strong>6.1 hours and $2.76 a game</strong>.</p>
   <div class="chart" id="chart"></div>
   <p class="foot" id="chartFoot"></p>
+</div>
 </section>
 
 <section>
   <h2>What does Echo learn?</h2>
+<div class="sbody">
   <p>To predict what Jev would say about a board. Jev labelled 38,199 boards for $0.77, and Echo
     trained on them in about a minute on a laptop.</p>
+</div>
 </section>
 
 <section id="play">
   <h2>Your turn</h2>
-  <p>Same board, same food. Use arrow keys or WASD, or swipe.</p>
+<div class="sbody">
+  <p class="lede">Same board, same food. Use arrow keys or WASD, or swipe.</p>
   <div class="playwrap">
     <div class="board pboard" id="pboard" tabindex="0" role="application"
          aria-label="Your Snake board. Use the arrow keys to steer."></div>
@@ -367,10 +378,12 @@
       </table>
     </div>
   </div>
+</div>
 </section>
 
 <section>
   <h2>Train your own</h2>
+<div class="sbody">
   <ol class="steps">
     <li><p>Have Jev label your inputs.<br><span class="detail">14,391 boards cost $0.29.</span></p>
       <pre>export SNAKE_ALLOW_CRASH=1
@@ -399,6 +412,7 @@ uv run python collect_raw.py --games 90 --out results/dataset_board_crash.npz</p
     <li><a href="https://arxiv.org/abs/1503.02531">Distilling the Knowledge in a Neural Network</a><span>training a small model on a big one's answers, which is what Echo is</span></li>
     <li><a href="http://incompleteideas.net/book/the-book-2nd.html">Reinforcement Learning: An Introduction</a><span>the free textbook, for the whole picture</span></li>
   </ul>
+</div>
 </section>
 
 <footer>The replay starts all three on the same board. Averages use 20 boards that no training or
@@ -696,74 +710,71 @@ function dist(p, cap){
     '<div class="dcap">'+cap+'</div></div>';
 }
 function arrow(label, cls){
-  return '<div class="arr '+(cls||"")+'"><span>'+label+'</span>'+
+  return '<div class="arr '+(cls||"")+'">'+(label?'<span>'+label+'</span>':'')+
     '<svg viewBox="0 0 100 10" preserveAspectRatio="none" aria-hidden="true">'+
-    '<line x1="0" y1="5" x2="92" y2="5" stroke="currentColor" stroke-width="2" vector-effect="non-scaling-stroke"/>'+
-    '<path d="M100 5 L90 0 L90 10 Z" fill="currentColor"/></svg><span class="down">↓</span></div>';
+    '<line x1="0" y1="5" x2="90" y2="5" stroke="currentColor" stroke-width="1.75" vector-effect="non-scaling-stroke"/>'+
+    '<path d="M100 5 L88 0 L88 10 Z" fill="currentColor"/></svg></div>';
 }
+// One glyph set: 150 x 100, the shape up top, a mono caption at the bottom.
 const GLYPH = {
-  cloud: '<svg viewBox="0 0 170 110" role="img" aria-label="Jev, in the cloud">'+
-    '<path d="M42 92 a24 24 0 0 1 4 -46 a32 32 0 0 1 58 -12 a26 26 0 0 1 46 20 a22 22 0 0 1 -6 38 z" '+
-    'fill="var(--surface)" stroke="var(--cloud)" stroke-width="2.5"/>'+
-    '<text x="88" y="70" text-anchor="middle" font-size="21" fill="var(--cloud)">Jev</text>'+
-    '<text x="88" y="86" text-anchor="middle" class="gm" fill="var(--ink-faint)">cloud API</text></svg>',
-  chip: '<svg viewBox="0 0 170 110" role="img" aria-label="Echo, on the laptop">'+
-    [ -2,-1,0,1,2 ].map(i=>'<line x1="'+(85+i*16)+'" y1="10" x2="'+(85+i*16)+'" y2="18" stroke="var(--local)" stroke-width="2"/>'+
-      '<line x1="'+(85+i*16)+'" y1="92" x2="'+(85+i*16)+'" y2="100" stroke="var(--local)" stroke-width="2"/>').join("")+
-    '<rect x="27" y="18" width="116" height="74" rx="8" fill="var(--surface)" stroke="var(--local)" stroke-width="2.5"/>'+
-    '<text x="85" y="56" text-anchor="middle" font-size="21" fill="var(--local)">Echo</text>'+
-    '<text x="85" y="76" text-anchor="middle" class="gm" fill="var(--ink-faint)">87 KB · laptop</text></svg>',
+  cloud: '<svg viewBox="0 0 150 100" role="img" aria-label="Jev, a cloud API">'+
+    '<path d="M36 70 a20 20 0 0 1 4 -38 a28 28 0 0 1 50 -10 a22 22 0 0 1 38 17 a18 18 0 0 1 -6 31 z" '+
+    'fill="var(--surface)" stroke="var(--cloud)" stroke-width="2"/>'+
+    '<text x="78" y="56" text-anchor="middle" font-size="19" fill="var(--cloud)">Jev</text>'+
+    '<text x="75" y="95" text-anchor="middle" class="gm" fill="var(--ink-faint)">cloud API</text></svg>',
+  chip: '<svg viewBox="0 0 150 100" role="img" aria-label="Echo, 87 KB on the laptop">'+
+    [-2,-1,0,1,2].map(i=>'<line x1="'+(75+i*14)+'" y1="10" x2="'+(75+i*14)+'" y2="16" stroke="var(--local)" stroke-width="2"/>'+
+      '<line x1="'+(75+i*14)+'" y1="68" x2="'+(75+i*14)+'" y2="74" stroke="var(--local)" stroke-width="2"/>').join("")+
+    '<rect x="33" y="16" width="84" height="52" rx="7" fill="var(--surface)" stroke="var(--local)" stroke-width="2"/>'+
+    '<text x="75" y="48" text-anchor="middle" font-size="19" fill="var(--local)">Echo</text>'+
+    '<text x="75" y="95" text-anchor="middle" class="gm" fill="var(--ink-faint)">87 KB · laptop</text></svg>',
 };
 function treeGlyph(){
   const X = D.example;
   const moves = ["UP","DOWN","LEFT","RIGHT"].filter(m => m in X.search_vals);
   const dead = moves.filter(m => X.search_vals[m] < -1);
-  let s = '<svg viewBox="-32 0 202 140" role="img" aria-label="Echo plus search: every move played '+X.depth+
+  const ys = moves.length === 2 ? [26,58] : [12,42,72];
+  let s = '<svg viewBox="0 0 150 100" role="img" aria-label="Echo plus search: every move played about '+X.depth+
     ' turns ahead'+(dead.length ? '; '+dead.join(' and ')+' ends the game' : '')+'">';
-  const ys = moves.length === 2 ? [40,100] : [18,70,122];
-  const kids = moves.map((m,i)=>[m, ys[i]]);
-  s += '<rect x="-30" y="58" width="44" height="24" rx="5" fill="var(--surface)" stroke="var(--local)" stroke-width="2"/>'+
-       '<text x="-8" y="74" text-anchor="middle" font-size="11" fill="var(--local)">Echo</text>';
-  kids.forEach(([m,ky])=>{
-    const kx=62, dead=X.search_vals[m] < -1;
-    if(dead){
-      s += '<line x1="14" y1="70" x2="'+kx+'" y2="'+ky+'" stroke="var(--ink-faint)" stroke-width="1.6" stroke-dasharray="4 3"/>'+
-        '<text x="'+kx+'" y="'+(ky+6)+'" text-anchor="middle" font-size="17" fill="var(--ink)">✕</text>'+
-        '<text x="'+(kx+14)+'" y="'+(ky+4)+'" class="gm" fill="var(--ink-soft)">'+m+': crash</text>';
+  s += '<rect x="0" y="30" width="40" height="24" rx="5" fill="var(--surface)" stroke="var(--local)" stroke-width="2"/>'+
+       '<text x="20" y="46" text-anchor="middle" font-size="11" fill="var(--local)">Echo</text>';
+  moves.forEach((m,i)=>{
+    const ky = ys[i], kx = 66, isDead = dead.includes(m);
+    if (isDead) {
+      s += '<line x1="40" y1="42" x2="'+kx+'" y2="'+ky+'" stroke="var(--ink-faint)" stroke-width="1.5" stroke-dasharray="3 3"/>'+
+        '<path d="M'+(kx-4)+' '+(ky-4)+' l8 8 M'+(kx+4)+' '+(ky-4)+' l-8 8" stroke="var(--ink)" stroke-width="1.75"/>'+
+        '<text x="'+(kx+10)+'" y="'+(ky+4)+'" class="gm" fill="var(--ink-soft)">crash</text>';
     } else {
-      s += '<line x1="14" y1="70" x2="'+kx+'" y2="'+ky+'" stroke="var(--deep)" stroke-width="1.8"/>'+
-        '<circle cx="'+kx+'" cy="'+ky+'" r="4" fill="var(--deep)"/>'+
-        '<text x="'+kx+'" y="'+(ky-9)+'" text-anchor="middle" class="gm" fill="var(--ink-faint)">'+m+'</text>';
-      let level=[[kx,ky]], spread=13;
-      for(let d=1; d<=2; d++){
+      s += '<line x1="40" y1="42" x2="'+kx+'" y2="'+ky+'" stroke="var(--deep)" stroke-width="1.75"/>'+
+        '<circle cx="'+kx+'" cy="'+ky+'" r="3.5" fill="var(--deep)"/>';
+      let level=[[kx,ky]], spread=9;
+      for (let d=1; d<=2; d++){
         const next=[];
         level.forEach(([px,py])=>[-1,0,1].forEach(k=>{
-          const nx=px+30, ny=py+k*spread;
-          s += '<line x1="'+px+'" y1="'+py+'" x2="'+nx+'" y2="'+ny+'" stroke="var(--deep)" stroke-width="1" opacity="'+(d===1?.7:.4)+'"/>';
+          const nx=px+28, ny=py+k*spread;
+          s += '<line x1="'+px+'" y1="'+py+'" x2="'+nx+'" y2="'+ny+'" stroke="var(--deep)" stroke-width="1" opacity="'+(d===1?.7:.35)+'"/>';
           next.push([nx,ny]);
         }));
-        level=next; spread=4;
+        level=next; spread=3;
       }
-      s += '<text x="'+(kx+70)+'" y="'+(ky+4)+'" class="gm" fill="var(--ink-faint)">…</text>';
     }
   });
-  return s + '</svg><div class="gcap">'+X.depth+' moves deep · '+X.boards+' boards</div>';
+  return s + '<text x="75" y="95" text-anchor="middle" class="gm" fill="var(--ink-faint)">'+X.depth+' deep · '+X.boards+' boards</text></svg>';
 }
 function renderFlow(){
   const X = D.example, F = D.fair;
   const ms = v => v < 1 ? v.toFixed(1)+" ms" : "~"+(Math.round(v/10)*10)+" ms";
-  const coords = '<div class="meta">head row '+X.head.row+', col '+X.head.col+'<br>food row '+
-    X.food.row+', col '+X.food.col+'<br>length '+X.length+'</div>';
-  const jevIn = '<div class="paper"><div class="pin">'+miniBoard()+coords+'</div>'+
-    '<div class="prompt">"Choose the snake\'s next move from the board. Avoid walls and the snake\'s own body, head towards the food…"</div></div>';
-  const boardIn = '<div class="paper justboard">'+miniBoard()+'<span class="cap">Just the board.</span></div>';
+  const board = '<div class="paper">'+miniBoard()+'<ul class="sees"><li>the board</li></ul></div>';
+  const jev = '<div class="paper">'+miniBoard()+'<ul class="sees"><li>the board</li>'+
+    '<li>head '+X.head.row+','+X.head.col+'</li><li>food '+X.food.row+','+X.food.col+'</li><li>length '+X.length+'</li></ul>'+
+    '<p class="q">"Choose the snake\'s next move… head towards the food…"</p></div>';
+  const row = (cls, input, t, glyph, answer, cap) =>
+    '<div class="frow '+cls+'">'+input+arrow(t)+'<div class="glyph">'+glyph+'</div>'+arrow("","out")+dist(answer, cap)+'</div>';
   $("flow").innerHTML =
-    '<div class="frow c">'+jevIn+arrow(ms(F.jev.ms))+'<div class="glyph">'+GLYPH.cloud+'</div>'+arrow("","out")+
-      dist(X.jev, "Goes straight at the food, through its own body.")+'</div>'+
-    '<div class="frow l">'+boardIn+arrow(ms(F.echo.ms))+'<div class="glyph">'+GLYPH.chip+'</div>'+arrow("","out")+
-      dist(X.echo, "Learnt from Jev, mistake included.")+'</div>'+
-    '<div class="frow d">'+boardIn+arrow(ms(F.search.ms))+'<div class="glyph">'+treeGlyph()+'</div>'+arrow("","out")+
-      dist(X.search, "Rules out the crash; Echo's own preference picks the rest.")+'</div>';
+    '<div class="fhead"><span>Sees</span><span>Model</span><span>Answers</span></div>'+
+    row("c", jev, ms(F.jev.ms), GLYPH.cloud, X.jev, "Straight at the food, through its own body.")+
+    row("l", board, ms(F.echo.ms), GLYPH.chip, X.echo, "Learnt from Jev, mistake included.")+
+    row("d", board, ms(F.search.ms), treeGlyph(), X.search, "Rules out the crash; Echo's own preference picks the rest.");
 }
 
 /* ---- speed against score ---- */
