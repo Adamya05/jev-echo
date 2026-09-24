@@ -928,7 +928,8 @@ def build(name: str, backend: Backend | None, iterations: int = 160,
                           leaf="echo" if "P" in kind else "pellets",
                           root_vote="V" in kind,
                           backup="max" if "M" in kind else "avg" if "A" in kind
-                          else "rel" if "R" in kind else "soft" if "S" in kind else "exp",
+                          else "rel" if "R" in kind else "soft" if "S" in kind
+                          else "first" if "F" in kind else "exp",
                           w=float("0." + kind.split("R")[1]) if "R" in kind and kind.split("R")[1] else 0.001)
     if name.startswith("board_budget"):
         ms = name.split("_")[-1]

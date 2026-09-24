@@ -107,9 +107,12 @@ def main() -> int:
     ap.add_argument("--rollouts", type=int, default=16,
                     help="rollouts per candidate for best-of-N")
     ap.add_argument("--save", default=None, help="write per-seed results as JSON")
+    ap.add_argument("--seed-offset", type=int, default=0,
+                    help="first board; e.g. 100 for boards the tuning never saw")
     args = ap.parse_args()
 
-    jobs = [(c, s) for c in args.configs for s in range(args.games)]
+    jobs = [(c, s) for c in args.configs
+            for s in range(args.seed_offset, args.seed_offset + args.games)]
     print(f"\n{BOLD}{len(jobs)} games{RESET}  "
           f"{args.games} seeds x {len(args.configs)} configs, "
           f"{args.iterations} MCTS iterations, cap {args.max_steps} steps\n")
