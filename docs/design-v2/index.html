@@ -1,0 +1,456 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width,initial-scale=1" />
+<meta name="description" content="Echo — a tiny model trained to match Jev's distribution over Snake moves." />
+<title>Echo — imitate Jev, then search</title>
+<style>
+:root{
+  --bg:#f5f5f0;
+  --paper:#fbfbf7;
+  --ink:#11120f;
+  --muted:#66685f;
+  --line:#d9dbd2;
+  --jev:#5b5ce2;
+  --echo:#17a56b;
+  --echo-soft:#e4f4ec;
+  --jev-soft:#ececfa;
+  --danger:#d54d3d;
+  --max:1160px;
+}
+*{box-sizing:border-box}
+html{scroll-behavior:smooth}
+body{
+  margin:0;
+  background:var(--bg);
+  color:var(--ink);
+  font-family:Inter,ui-sans-serif,-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;
+  font-size:17px;
+  line-height:1.55;
+  letter-spacing:-.01em;
+}
+a{color:inherit}
+.wrap{width:min(calc(100% - 40px),var(--max));margin:0 auto}
+nav{
+  height:72px;
+  display:flex;
+  align-items:center;
+  justify-content:space-between;
+  border-bottom:1px solid var(--line);
+}
+.brand{display:flex;gap:10px;align-items:center;font-weight:800;letter-spacing:-.04em}
+.brand-dot{width:11px;height:11px;border-radius:50%;background:var(--echo)}
+.navlinks{display:flex;gap:24px;font-size:14px;color:var(--muted)}
+.navlinks a{text-decoration:none}
+.navlinks a:hover{color:var(--ink)}
+.hero{
+  min-height:720px;
+  display:grid;
+  grid-template-columns:1.15fr .85fr;
+  gap:72px;
+  align-items:center;
+  padding:100px 0 84px;
+}
+.eyebrow{
+  display:inline-flex;align-items:center;gap:9px;
+  font-size:12px;font-weight:800;letter-spacing:.13em;text-transform:uppercase;
+  color:var(--muted);margin-bottom:26px
+}
+.eyebrow:before{content:"";width:22px;height:1px;background:currentColor}
+h1{
+  font-size:clamp(54px,6.5vw,92px);
+  line-height:.94;
+  letter-spacing:-.075em;
+  margin:0 0 30px;
+  max-width:820px
+}
+.lede{font-size:22px;line-height:1.45;color:#3f413b;max-width:680px;margin:0 0 34px}
+.lede strong{color:var(--ink)}
+.actions{display:flex;gap:12px;flex-wrap:wrap}
+.button{
+  display:inline-flex;align-items:center;justify-content:center;gap:8px;
+  min-height:48px;padding:0 18px;border-radius:8px;border:1px solid var(--ink);
+  text-decoration:none;font-weight:700;font-size:14px;background:var(--ink);color:var(--paper)
+}
+.button.secondary{background:transparent;color:var(--ink);border-color:var(--line)}
+.button:hover{transform:translateY(-1px)}
+.hero-card{
+  background:var(--paper);border:1px solid var(--line);border-radius:18px;padding:28px;
+}
+.hero-card .mini-label{font-size:12px;color:var(--muted);text-transform:uppercase;letter-spacing:.12em;font-weight:800}
+.vector{display:grid;gap:12px;margin:28px 0}
+.vector-row{display:grid;grid-template-columns:54px 1fr 46px;gap:12px;align-items:center;font-size:13px}
+.track{height:8px;background:#e7e8e0;border-radius:99px;overflow:hidden}
+.fill{height:100%;border-radius:99px;background:var(--jev)}
+.fill.echo{background:var(--echo)}
+.vector-note{border-top:1px solid var(--line);padding-top:20px;margin-top:20px;color:var(--muted);font-size:14px}
+.stat-strip{
+  border-top:1px solid var(--line);border-bottom:1px solid var(--line);
+  display:grid;grid-template-columns:repeat(3,1fr)
+}
+.stat{padding:34px 30px 38px;border-right:1px solid var(--line)}
+.stat:first-child{padding-left:0}.stat:last-child{border-right:0}
+.stat-value{font-size:52px;line-height:1;font-weight:800;letter-spacing:-.06em}
+.stat-value.echo{color:var(--echo)} .stat-value.jev{color:var(--jev)}
+.stat-label{margin-top:11px;color:var(--muted);font-size:14px}
+section{padding:110px 0;border-bottom:1px solid var(--line)}
+.section-head{display:grid;grid-template-columns:.7fr 1.3fr;gap:54px;margin-bottom:64px}
+.kicker{font-size:12px;font-weight:800;letter-spacing:.13em;text-transform:uppercase;color:var(--muted)}
+h2{font-size:clamp(40px,5vw,70px);line-height:1;letter-spacing:-.065em;margin:0}
+.section-copy{max-width:660px;color:#4f514a;font-size:18px}
+.compare-grid{display:grid;grid-template-columns:1fr 86px 1fr;gap:18px;align-items:stretch}
+.compare-card{
+  border:1px solid var(--line);border-radius:16px;background:var(--paper);padding:24px
+}
+.compare-card.echo-card{border-color:#acd9c3;background:#f8fcfa}
+.card-top{display:flex;justify-content:space-between;gap:12px;align-items:center;margin-bottom:24px}
+.pill{font-size:11px;font-weight:800;letter-spacing:.1em;text-transform:uppercase;padding:7px 9px;border-radius:99px;background:var(--jev-soft);color:var(--jev)}
+.pill.echo{background:var(--echo-soft);color:#087847}
+.big-number{font-size:58px;font-weight:800;line-height:1;letter-spacing:-.06em;margin:20px 0 8px}
+.big-number small{font-size:18px;letter-spacing:-.02em;color:var(--muted);font-weight:600}
+.card-note{color:var(--muted);font-size:14px}
+.vs{display:flex;align-items:center;justify-content:center;font-size:13px;color:var(--muted);font-weight:800}
+.call-budget{
+  margin-top:22px;border:1px solid var(--line);border-radius:16px;padding:26px;background:#fff;
+  display:grid;grid-template-columns:1fr 1fr;gap:28px
+}
+.budget-title{font-weight:800;font-size:20px;margin-bottom:8px}
+.budget-copy{color:var(--muted);font-size:14px}
+.ticks{display:grid;grid-template-columns:repeat(19,1fr);gap:4px;align-content:start;padding-top:7px}
+.tick{height:10px;border-radius:2px;background:#c9e7d7}
+.tick.strong{background:var(--echo)}
+.score-card{border:1px solid var(--line);border-radius:18px;background:var(--paper);padding:30px}
+.score-row{display:grid;grid-template-columns:155px 1fr 70px;gap:20px;align-items:center;margin:22px 0}
+.score-name{font-weight:750}
+.score-track{height:18px;border-radius:99px;background:#e5e6df;overflow:hidden}
+.score-fill{height:100%;border-radius:99px;background:#b9bac1}
+.score-fill.echo{background:#7cc9a6}.score-fill.search{background:var(--echo)}
+.score-num{text-align:right;font-variant-numeric:tabular-nums;font-weight:800}
+.score-foot{display:flex;justify-content:space-between;gap:24px;padding-top:24px;border-top:1px solid var(--line);margin-top:28px;color:var(--muted);font-size:13px}
+.quote{
+  margin:76px 0 0;padding:50px;border-radius:18px;background:var(--ink);color:white;
+  font-size:clamp(30px,4vw,54px);line-height:1.05;letter-spacing:-.05em;font-weight:750
+}
+.quote em{font-style:normal;color:#83dfb3}
+.flow{
+  display:grid;grid-template-columns:1fr 80px 1fr 80px 1fr;align-items:center;gap:8px;margin-top:20px
+}
+.node{border:1px solid var(--line);border-radius:16px;background:var(--paper);padding:28px;min-height:190px}
+.node-num{font-size:12px;color:var(--muted);font-weight:800;letter-spacing:.12em}
+.node h3{font-size:24px;letter-spacing:-.04em;margin:34px 0 8px}
+.node p{font-size:14px;color:var(--muted);margin:0}
+.arrow{text-align:center;font-size:26px;color:#8b8d85}
+.metric-line{display:flex;justify-content:space-between;gap:20px;border-top:1px solid var(--line);padding:16px 0;font-size:14px}
+.metric-line strong{font-size:18px}
+.search-visual{
+  margin-top:58px;display:grid;grid-template-columns:.9fr 1.1fr;gap:54px;align-items:center
+}
+.tree{border:1px solid var(--line);border-radius:18px;background:var(--paper);padding:30px;overflow:hidden}
+.tree-level{display:flex;justify-content:center;gap:10px;margin:20px 0}
+.tree-node{width:18px;height:18px;border-radius:50%;background:#d9dad3;border:1px solid #bbbdb5}
+.tree-node.root{background:var(--echo);border-color:var(--echo);width:24px;height:24px}
+.tree-node.dead{background:#f0d4cf;border-color:#e2a59b}
+.tree-lines{text-align:center;color:#b7b9b0;font-family:monospace;letter-spacing:7px;line-height:1}
+.detail-list{display:grid;gap:0}
+.detail{padding:22px 0;border-top:1px solid var(--line)}
+.detail:first-child{border-top:0}
+.detail h3{font-size:20px;margin:0 0 6px;letter-spacing:-.03em}
+.detail p{margin:0;color:var(--muted);font-size:15px}
+.repro{
+  border:1px solid var(--line);border-radius:18px;background:var(--paper);overflow:hidden
+}
+details{border-top:1px solid var(--line);padding:0 24px}
+details:first-child{border-top:0}
+summary{cursor:pointer;list-style:none;display:flex;justify-content:space-between;gap:20px;align-items:center;padding:22px 0;font-weight:750}
+summary::-webkit-details-marker{display:none}
+summary:after{content:"+";font-size:22px;color:var(--muted)}
+details[open] summary:after{content:"−"}
+details p{color:var(--muted);font-size:15px;max-width:760px;margin:0 0 24px}
+code{
+  font-family:"SFMono-Regular",Consolas,monospace;font-size:.9em;background:#e9eae3;padding:2px 5px;border-radius:4px
+}
+.caveats{display:grid;grid-template-columns:repeat(4,1fr);gap:16px}
+.caveat{padding:22px;border:1px solid var(--line);border-radius:12px;font-size:14px;color:var(--muted)}
+.caveat strong{display:block;color:var(--ink);margin-bottom:8px;font-size:15px}
+footer{padding:42px 0 60px;color:var(--muted);font-size:13px;display:flex;justify-content:space-between;gap:20px}
+footer a{text-decoration:none;border-bottom:1px solid var(--line)}
+@media(max-width:900px){
+  .hero{grid-template-columns:1fr;gap:44px;padding-top:70px;min-height:auto}
+  .section-head{grid-template-columns:1fr;gap:18px}
+  .compare-grid{grid-template-columns:1fr}
+  .vs{padding:3px 0}
+  .call-budget,.search-visual{grid-template-columns:1fr}
+  .flow{grid-template-columns:1fr}
+  .arrow{transform:rotate(90deg);height:44px}
+  .caveats{grid-template-columns:1fr 1fr}
+}
+@media(max-width:640px){
+  body{font-size:16px}.wrap{width:min(calc(100% - 28px),var(--max))}
+  nav{height:62px}.navlinks a:first-child{display:none}
+  .hero{padding:58px 0 56px}h1{font-size:52px}
+  .lede{font-size:19px}.hero-card{padding:20px}
+  .stat-strip{grid-template-columns:1fr}.stat{border-right:0;border-bottom:1px solid var(--line);padding:24px 0}.stat:last-child{border-bottom:0}
+  section{padding:76px 0}
+  .score-row{grid-template-columns:100px 1fr 45px;gap:12px}
+  .score-foot{flex-direction:column}
+  .quote{padding:30px;font-size:34px}
+  .caveats{grid-template-columns:1fr}
+  footer{flex-direction:column}
+}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <nav>
+    <div class="brand"><span class="brand-dot"></span> ECHO</div>
+    <div class="navlinks">
+      <a href="#method">Method</a>
+      <a href="https://github.com/Adamya05/jev-echo">GitHub ↗</a>
+    </div>
+  </nav>
+
+  <main>
+    <header class="hero">
+      <div>
+        <div class="eyebrow">Distilling System One</div>
+        <h1>A tiny model can imitate Jev well enough to matter.</h1>
+        <p class="lede">Echo is trained to <strong>match Jev’s distribution over Snake moves</strong>. On held-out boards, its top move agrees with Jev <strong>93% of the time</strong>.</p>
+        <div class="actions">
+          <a class="button" href="#result">See what that unlocks ↓</a>
+          <a class="button secondary" href="https://adamya05.github.io/jev-echo/design-pass/">Open current demo ↗</a>
+        </div>
+      </div>
+
+      <div class="hero-card" aria-label="Conceptual probability distribution comparison">
+        <div class="mini-label">What Echo learns</div>
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:18px;margin-top:18px">
+          <div>
+            <div style="font-weight:800;color:var(--jev);font-size:14px">Jev</div>
+            <div class="vector">
+              <div class="vector-row"><span>up</span><span class="track"><span class="fill" style="display:block;width:18%"></span></span><span>P↑</span></div>
+              <div class="vector-row"><span>right</span><span class="track"><span class="fill" style="display:block;width:78%"></span></span><span>P→</span></div>
+              <div class="vector-row"><span>down</span><span class="track"><span class="fill" style="display:block;width:9%"></span></span><span>P↓</span></div>
+              <div class="vector-row"><span>left</span><span class="track"><span class="fill" style="display:block;width:36%"></span></span><span>P←</span></div>
+            </div>
+          </div>
+          <div>
+            <div style="font-weight:800;color:var(--echo);font-size:14px">Echo</div>
+            <div class="vector">
+              <div class="vector-row"><span>up</span><span class="track"><span class="fill echo" style="display:block;width:21%"></span></span><span>P↑</span></div>
+              <div class="vector-row"><span>right</span><span class="track"><span class="fill echo" style="display:block;width:74%"></span></span><span>P→</span></div>
+              <div class="vector-row"><span>down</span><span class="track"><span class="fill echo" style="display:block;width:12%"></span></span><span>P↓</span></div>
+              <div class="vector-row"><span>left</span><span class="track"><span class="fill echo" style="display:block;width:33%"></span></span><span>P←</span></div>
+            </div>
+          </div>
+        </div>
+        <div class="vector-note">Conceptual illustration. Echo is trained on the full four-move distribution, not only Jev’s chosen move.</div>
+      </div>
+    </header>
+
+    <div class="stat-strip">
+      <div class="stat">
+        <div class="stat-value echo">93%</div>
+        <div class="stat-label">same top move as Jev on held-out boards</div>
+      </div>
+      <div class="stat">
+        <div class="stat-value">0.20 <span style="font-size:.38em">ms</span></div>
+        <div class="stat-label">per Echo call on an Apple M4</div>
+      </div>
+      <div class="stat">
+        <div class="stat-value">22,212</div>
+        <div class="stat-label">parameters · 87 KB</div>
+      </div>
+    </div>
+
+    <section id="result">
+      <div class="section-head">
+        <div class="kicker">The leverage</div>
+        <div>
+          <h2>Same decision. Very different budget.</h2>
+          <p class="section-copy">Jev is the stronger teacher. Echo is the cheap imitation. The point is not that Echo suddenly becomes smarter — it’s that you can ask it vastly more questions before the clock runs out.</p>
+        </div>
+      </div>
+
+      <div class="compare-grid">
+        <div class="compare-card">
+          <div class="card-top"><strong>Jev</strong><span class="pill">teacher</span></div>
+          <div class="big-number">159 <small>ms / move</small></div>
+          <div class="card-note">One System One decision on the held-out run.</div>
+        </div>
+        <div class="vs">vs</div>
+        <div class="compare-card echo-card">
+          <div class="card-top"><strong>Echo</strong><span class="pill echo">student</span></div>
+          <div class="big-number">0.20 <small>ms / call</small></div>
+          <div class="card-note">About 800× faster per model call.</div>
+        </div>
+      </div>
+
+      <div class="call-budget">
+        <div>
+          <div class="budget-title">That speed buys search.</div>
+          <div class="budget-copy">Echo + search usually looks 7–8 moves ahead. Running that same search policy with Jev would require about <strong>361 Jev calls per move</strong> — roughly 6.1 hours and $2.76 per game.</div>
+        </div>
+        <div>
+          <div style="font-size:12px;text-transform:uppercase;letter-spacing:.12em;font-weight:800;color:var(--muted);margin-bottom:10px">Many cheap evaluations</div>
+          <div class="ticks" aria-hidden="true">
+            <span class="tick strong"></span><span class="tick "></span><span class="tick "></span><span class="tick "></span><span class="tick "></span><span class="tick "></span><span class="tick "></span><span class="tick strong"></span><span class="tick "></span><span class="tick "></span><span class="tick "></span><span class="tick "></span><span class="tick "></span><span class="tick "></span><span class="tick strong"></span><span class="tick "></span><span class="tick "></span><span class="tick "></span><span class="tick "></span><span class="tick "></span><span class="tick "></span><span class="tick strong"></span><span class="tick "></span><span class="tick "></span><span class="tick "></span><span class="tick "></span><span class="tick "></span><span class="tick "></span><span class="tick strong"></span><span class="tick "></span><span class="tick "></span><span class="tick "></span><span class="tick "></span><span class="tick "></span><span class="tick "></span><span class="tick strong"></span><span class="tick "></span><span class="tick "></span><span class="tick "></span><span class="tick "></span><span class="tick "></span><span class="tick "></span><span class="tick strong"></span><span class="tick "></span><span class="tick "></span><span class="tick "></span><span class="tick "></span><span class="tick "></span><span class="tick "></span><span class="tick strong"></span><span class="tick "></span><span class="tick "></span><span class="tick "></span><span class="tick "></span><span class="tick "></span><span class="tick "></span><span class="tick strong"></span><span class="tick "></span><span class="tick "></span><span class="tick "></span><span class="tick "></span><span class="tick "></span><span class="tick "></span><span class="tick strong"></span><span class="tick "></span><span class="tick "></span><span class="tick "></span><span class="tick "></span><span class="tick "></span><span class="tick "></span><span class="tick strong"></span><span class="tick "></span><span class="tick "></span><span class="tick "></span><span class="tick "></span><span class="tick "></span><span class="tick "></span><span class="tick strong"></span><span class="tick "></span><span class="tick "></span><span class="tick "></span><span class="tick "></span><span class="tick "></span><span class="tick "></span><span class="tick strong"></span><span class="tick "></span><span class="tick "></span><span class="tick "></span><span class="tick "></span><span class="tick "></span><span class="tick "></span><span class="tick strong"></span><span class="tick "></span><span class="tick "></span><span class="tick "></span>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <section>
+      <div class="section-head">
+        <div class="kicker">Held-out result</div>
+        <div>
+          <h2>Imitation alone ties. Imitation plus search changes the game.</h2>
+          <p class="section-copy">Twenty boards that no training or tuning touched. A crash ends the game.</p>
+        </div>
+      </div>
+
+      <div class="score-card">
+        <div class="score-row">
+          <div class="score-name">Jev</div>
+          <div class="score-track"><div class="score-fill" style="width:19.3%"></div></div>
+          <div class="score-num">7.5</div>
+        </div>
+        <div class="score-row">
+          <div class="score-name">Echo</div>
+          <div class="score-track"><div class="score-fill echo" style="width:20.4%"></div></div>
+          <div class="score-num">7.9</div>
+        </div>
+        <div class="score-row">
+          <div class="score-name">Echo + search</div>
+          <div class="score-track"><div class="score-fill search" style="width:100%"></div></div>
+          <div class="score-num">38.8</div>
+        </div>
+        <div class="score-foot">
+          <span>Average score across boards 100–119</span>
+          <strong style="color:var(--echo)">Echo + search won 20 of 20.</strong>
+        </div>
+      </div>
+
+      <div class="quote">Echo isn’t trained to play Snake. It’s trained to predict <em>how Jev sees each decision.</em></div>
+    </section>
+
+    <section id="method">
+      <div class="section-head">
+        <div class="kicker">How Echo exists</div>
+        <div>
+          <h2>Turn Jev’s judgment into a tiny local policy.</h2>
+          <p class="section-copy">Jev sees a text description of the board and returns a probability for each move. Echo sees the same state as three 10×10 grids and learns to match Jev’s full probability distribution.</p>
+        </div>
+      </div>
+
+      <div class="flow">
+        <div class="node">
+          <div class="node-num">01 · TEACHER</div>
+          <h3>Ask Jev</h3>
+          <p>Collect Jev’s probability distribution over up, right, down and left.</p>
+        </div>
+        <div class="arrow">→</div>
+        <div class="node">
+          <div class="node-num">02 · DISTILL</div>
+          <h3>Train Echo</h3>
+          <p>Minimize KL divergence to Jev, weighting boards by Jev’s confidence.</p>
+        </div>
+        <div class="arrow">→</div>
+        <div class="node">
+          <div class="node-num">03 · CORRECT</div>
+          <h3>Let Echo drive</h3>
+          <p>Jev labels the states Echo actually reaches. Retrain twice with DAgger.</p>
+        </div>
+      </div>
+
+      <div style="margin-top:46px;border-top:1px solid var(--line)">
+        <div class="metric-line"><span>Total Jev-labeled boards</span><strong>38,199</strong></div>
+        <div class="metric-line"><span>Total Jev labeling cost</span><strong>$0.77</strong></div>
+        <div class="metric-line"><span>Held-out agreement</span><strong>93%</strong></div>
+        <div class="metric-line"><span>Held-out KL divergence</span><strong>0.013 nats</strong></div>
+      </div>
+    </section>
+
+    <section>
+      <div class="section-head">
+        <div class="kicker">Why search works</div>
+        <div>
+          <h2>Cheap judgment becomes useful computation.</h2>
+          <p class="section-copy">Snake is unusually friendly to this experiment: the rules can cheaply simulate the next state. Echo scores the branches; the tree discovers which apparently reasonable moves lead to death.</p>
+        </div>
+      </div>
+
+      <div class="search-visual">
+        <div class="tree" aria-hidden="true">
+          <div class="tree-level"><span class="tree-node root"></span></div>
+          <div class="tree-lines">╱ │ ╲</div>
+          <div class="tree-level"><span class="tree-node"></span><span class="tree-node"></span><span class="tree-node"></span><span class="tree-node dead"></span></div>
+          <div class="tree-lines">╱╲  ╱╲  ╱╲</div>
+          <div class="tree-level"><span class="tree-node"></span><span class="tree-node dead"></span><span class="tree-node"></span><span class="tree-node"></span><span class="tree-node"></span><span class="tree-node dead"></span></div>
+          <div class="tree-lines">············</div>
+          <div style="text-align:center;margin-top:24px;font-size:13px;color:var(--muted)">Usually 7–8 moves deep within the time budget</div>
+        </div>
+
+        <div class="detail-list">
+          <div class="detail"><h3>Echo supplies the prior.</h3><p>When branches look equally good, the search naturally follows the policy Echo learned from Jev.</p></div>
+          <div class="detail"><h3>Simulation exposes consequences.</h3><p>Moves that look plausible now but become fatal several steps later lose value.</p></div>
+          <div class="detail"><h3>The speed gap is the whole trick.</h3><p>Search only helps because Echo can be queried hundreds of times cheaply.</p></div>
+        </div>
+      </div>
+    </section>
+
+    <section>
+      <div class="section-head">
+        <div class="kicker">Reproduce it</div>
+        <div>
+          <h2>The experiment is small enough to inspect end to end.</h2>
+          <p class="section-copy">The repo includes collection, training, DAgger, held-out evaluation, search, and the page build.</p>
+        </div>
+      </div>
+
+      <div class="repro">
+        <details>
+          <summary><span>01 · Collect Jev labels</span><span style="color:var(--muted);font-size:13px">14,391 initial boards</span></summary>
+          <p>Run <code>collect_raw.py</code> to record board states and Jev’s full move distributions.</p>
+        </details>
+        <details>
+          <summary><span>02 · Train the student</span><span style="color:var(--muted);font-size:13px">22,212 parameters</span></summary>
+          <p><code>train_board.py</code> trains the small board network to match Jev’s distribution.</p>
+        </details>
+        <details>
+          <summary><span>03 · DAgger twice</span><span style="color:var(--muted);font-size:13px">23,808 more boards</span></summary>
+          <p>Let Echo drive, ask Jev to label the states Echo actually visits, then retrain. Repeat once more.</p>
+        </details>
+        <details>
+          <summary><span>04 · Race on untouched boards</span><span style="color:var(--muted);font-size:13px">boards 100–119</span></summary>
+          <p>Compare Jev, Echo and Echo + search with crashes enabled. The README has the exact commands and seeds.</p>
+        </details>
+      </div>
+
+      <div class="actions" style="margin-top:24px">
+        <a class="button" href="https://github.com/Adamya05/jev-echo#reproduce">Open reproduction steps ↗</a>
+        <a class="button secondary" href="https://github.com/Adamya05/jev-echo">Browse the code ↗</a>
+      </div>
+    </section>
+
+    <section>
+      <div class="section-head">
+        <div class="kicker">What this does not prove</div>
+        <div><h2>Keep the claim narrow.</h2></div>
+      </div>
+      <div class="caveats">
+        <div class="caveat"><strong>One tiny task.</strong>A 10×10 grid and four possible moves.</div>
+        <div class="caveat"><strong>Search gets a simulator.</strong>Snake’s next state is cheap to predict. Most real tasks are not.</div>
+        <div class="caveat"><strong>Twenty held-out boards.</strong>Useful evidence, not a giant benchmark.</div>
+        <div class="caveat"><strong>Recorded on Apple M4.</strong>The page reports measured runs; nothing here is a live model call.</div>
+      </div>
+    </section>
+  </main>
+
+  <footer>
+    <span>Echo · Jev distillation experiment</span>
+    <span><a href="https://github.com/Adamya05/jev-echo">GitHub</a> · <a href="https://adamya05.github.io/jev-echo/design-pass/">current design pass</a></span>
+  </footer>
+</div>
+</body>
+</html>
