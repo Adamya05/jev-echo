@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
-<meta name="description" content="Echo learns to play Snake like Jev, TypeSafe AI's System One model.">
+<meta name="description" content="Echo learns to play Snake like Jev.">
 <title>Echo learns to play like Jev</title>
 <style>
 :root{
@@ -345,8 +345,8 @@ footer a{text-decoration:none;color:var(--ink)}
   <div class="eyebrow"><a href="https://typesafe.ai" target="_blank" rel="noopener">Jev</a> plays Snake.</div>
   <h1>Echo learns to play like Jev.</h1>
   <div class="hero-copy">
-    It picks the same top move <strong>93% of the time, including the mistakes.</strong>
-    <span class="muted"> But Echo is about 800× faster.</span>
+    Echo picks the same top move <strong>93% of the time.</strong>
+    <span class="muted"> That includes Jev's mistakes. Echo is about 800× faster.</span>
   </div>
 </header>
 
@@ -354,8 +354,8 @@ footer a{text-decoration:none;color:var(--ink)}
   <div class="head reveal">
     <div class="num">01 / SAME MOVE</div>
     <div>
-      <h2>Copy the judgement.</h2>
-      <p class="copy">Jev returns probabilities over the available directions. Echo is trained to match that distribution.</p>
+      <h2>Teach Echo to play like Jev.</h2>
+      <p class="copy">For each board, Jev returns probabilities over the available moves. Echo trains on those probabilities.</p>
     </div>
   </div>
 
@@ -380,7 +380,7 @@ footer a{text-decoration:none;color:var(--ink)}
         <button type="button" data-mode="echo">ECHO</button>
       </div>
 
-      <div class="ink-note">Jev: RIGHT 95.0%. Echo: RIGHT 91.9%.</div>
+      <div class="ink-note">Same board. Almost the same answer.</div>
     </div>
   </div>
 </section>
@@ -390,11 +390,11 @@ footer a{text-decoration:none;color:var(--ink)}
     <div class="num">02 / SAME TIME</div>
     <div>
       <h2>What fits inside one Jev decision?</h2>
-      <p class="copy">On the held-out run: Jev took 159 ms per move. Echo took 0.20 ms per call.</p>
+      <p class="copy">On the held-out run, Jev took 159 ms per move. Echo took 0.20 ms per call.</p>
     </div>
   </div>
 
-  <div class="budget-title reveal">159 milliseconds buys one Jev decision.</div>
+  <div class="budget-title reveal">Same time budget.</div>
 
   <div class="budget">
     <div class="budget-col reveal">
@@ -409,15 +409,15 @@ footer a{text-decoration:none;color:var(--ink)}
     </div>
   </div>
 
-  <div class="spend reveal">So instead of making one decision, <span>spend the difference.</span></div>
+  <div class="spend reveal">What do you do with about 800× more decisions?<br><span>For Snake, I used them to look ahead.</span></div>
 </section>
 
 <section class="section">
   <div class="head reveal">
     <div class="num">03 / LOOK AHEAD</div>
     <div>
-      <h2>In Snake, spend it on search.</h2>
-      <p class="copy">Return to the same board. Jev wants RIGHT. Echo wants RIGHT. Search asks Echo about possible future states before committing.</p>
+      <h2>Look ahead before moving.</h2>
+      <p class="copy">On this board, Jev and Echo both choose RIGHT. I used Echo to evaluate possible futures before making the move.</p>
     </div>
   </div>
 
@@ -457,7 +457,7 @@ footer a{text-decoration:none;color:var(--ink)}
         <div><strong>75 ms</strong><span>recorded search</span></div>
       </div>
 
-      <div class="ink-note">The move both models liked immediately is the move search eliminates.</div>
+      <div class="ink-note">Seven moves later, RIGHT is dead.</div>
       <div class="note" style="margin-top:18px">schematic tree · recorded values · future food hidden from search</div>
     </div>
   </div>
@@ -467,8 +467,8 @@ footer a{text-decoration:none;color:var(--ink)}
   <div class="head reveal">
     <div class="num">04 / HELD OUT</div>
     <div>
-      <h2>Then try it somewhere untouched.</h2>
-      <p class="copy">Twenty held-out boards, seeds 100–119. Same boards for every player. A crash ends the game.</p>
+      <h2>Does it hold up?</h2>
+      <p class="copy">I ran Jev, Echo, and Echo + search on the same 20 boards that training and tuning never touched. A crash ends the game.</p>
     </div>
   </div>
 
@@ -504,11 +504,11 @@ footer a{text-decoration:none;color:var(--ink)}
     </svg>
 
     <div class="evidence-copy reveal">
-      <p>Echo alone looks like Jev.<br><span>Echo + search does not.</span></p>
+      <p>Echo alone: 7.9.<br>Jev: 7.5.<br><span>No clear difference.</span></p>
       <div class="small">
-        Echo + search averaged 38.8 food versus Jev's 7.5, while still using less wall-clock time per move: 103 ms versus 159 ms.
+        Echo + search averaged 38.8 while taking 103 ms per move. Jev averaged 7.5 at 159 ms per move.
         <br><br>
-        It won all 20 paired held-out boards. Twenty boards is still a small sample.
+        Echo + search won all 20 paired boards. Twenty boards is still a small sample.
       </div>
     </div>
   </div>
@@ -518,8 +518,8 @@ footer a{text-decoration:none;color:var(--ink)}
   <div class="head reveal">
     <div class="num">05 / WHAT BROKE</div>
     <div>
-      <h2>The experiment kept finding ways to lie.</h2>
-      <p class="copy">The useful part of the project was not getting a good number. It was finding the reasons the number might be fake.</p>
+      <h2>Three times I thought the experiment worked when it didn't.</h2>
+      <p class="copy">Each one changed the experiment.</p>
     </div>
   </div>
 
@@ -528,7 +528,7 @@ footer a{text-decoration:none;color:var(--ink)}
       <div class="break-n">01</div>
       <div>
         <h3>The first student had an easier job.</h3>
-        <p>It consumed <strong>28 features that code had already computed</strong> while Jev had to read the board. That was not a fair comparison, so Echo was rebuilt to read the raw board state.</p>
+        <p>It saw <strong>28 features that code had already computed</strong>. Jev had to read the board. I rebuilt Echo to read the raw board too.</p>
       </div>
     </div>
 
@@ -536,7 +536,7 @@ footer a{text-decoration:none;color:var(--ink)}
       <div class="break-n">02</div>
       <div>
         <h3>Copying Jev's games was not enough.</h3>
-        <p>One Echo mistake can send the game into a state Jev's own trajectories never visited. So <strong>Echo drove and Jev labelled wherever Echo ended up</strong>, then Echo retrained. Twice.</p>
+        <p>Echo's mistakes create states that do not appear in Jev's own games. So <strong>I let Echo drive and had Jev label the states it actually reached.</strong> Then I retrained. Twice.</p>
       </div>
     </div>
 
@@ -544,7 +544,7 @@ footer a{text-decoration:none;color:var(--ink)}
       <div class="break-n">03</div>
       <div>
         <h3>Search accidentally knew the future.</h3>
-        <p>Cloning the game's random generator leaked where the next food would appear. The search simulator was changed to draw <strong>fresh random future food</strong>, and the result was rerun.</p>
+        <p>The simulator copied the game's random generator, so search knew where future food would appear. <strong>I gave simulated futures fresh randomness and reran it.</strong></p>
       </div>
     </div>
   </div>
@@ -554,8 +554,8 @@ footer a{text-decoration:none;color:var(--ink)}
   <div class="head reveal">
     <div class="num">06 / BUILD</div>
     <div>
-      <h2>The copy can stay tiny because the job is tiny.</h2>
-      <p class="copy">Echo is not a replacement for Jev. It is one narrow slice of Jev's behaviour, distilled into a 22,212-parameter convolutional network.</p>
+      <h2>Echo only knows Snake.</h2>
+      <p class="copy">That is why it can be tiny. It only has to copy this one slice of Jev's behaviour: 22,212 parameters, 87 KB.</p>
     </div>
   </div>
 
@@ -585,13 +585,13 @@ footer a{text-decoration:none;color:var(--ink)}
 </section>
 
 <section class="final reveal">
-  <p>What else becomes possible if you can copy <span>one narrow capability</span> this cheaply?</p>
+  <p>What else could you build if you could copy <span>one narrow capability</span> this cheaply?</p>
   <a href="https://github.com/Adamya05/jev-echo">Inspect the code, data path and reproduction steps ↗</a>
 </section>
 
 <footer>
   <div class="footer-top">
-    <span>Echo / Jev distillation experiment</span>
+    <span>Echo / learning Jev on Snake</span>
     <a href="https://typesafe.ai">Jev ↗</a>
   </div>
   <div class="footer-copy">
