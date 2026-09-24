@@ -209,6 +209,8 @@
   .chart .pt line{stroke-width:2}
   .chart .c{fill:var(--cloud);stroke:var(--cloud)} .chart .l{fill:var(--local);stroke:var(--local)}
   .chart .d{fill:var(--deep);stroke:var(--deep)}
+  .stat{margin-top:26px;font-size:17px;color:var(--ink-soft)}
+  .stat strong{color:var(--ink);font-weight:600;white-space:nowrap}
   .foot{font-size:13.5px;color:var(--ink-faint);margin-top:14px;max-width:72ch}
   @media (max-width:700px){ .figs{grid-template-columns:1fr;gap:22px} }
 
@@ -281,18 +283,20 @@
 
 <section>
   <h2>How they play</h2>
-  <p>A real position: the food is to the right, behind the snake's own body.</p>
+  <p>A demonstrative sample.</p>
   <div class="flow" id="flow"></div>
 </section>
 
 <section>
-  <h2>How Echo plays it</h2>
+  <h2>Why build Echo?</h2>
   <div class="figs">
     <div><div class="fig l">800× faster</div>
       <p>Echo alone picks the same move as Jev 93% of the time.*</p></div>
     <div><div class="fig d">5× the score</div>
       <p>With search, Echo looks seven turns ahead at every move before it commits, and it's still no slower than Jev.</p></div>
   </div>
+  <p class="stat">To play like Echo + search, Jev would need about 324 calls per move:
+    roughly <strong>7.5 hours and $2.70 a game</strong>.</p>
   <div class="chart" id="chart"></div>
   <p class="foot" id="chartFoot"></p>
 </section>
@@ -325,13 +329,6 @@
       </table>
     </div>
   </div>
-</section>
-
-<section>
-  <h2>Why build Echo?</h2>
-  <p>Echo makes Jev's move 93% of the time, runs locally, and is 800× faster. That speed pays
-    for search. To play like Echo + search, Jev would need about 324 calls per move, which works out
-    to roughly 7.5 hours and $2.70 a game.</p>
 </section>
 
 <section>
@@ -629,14 +626,12 @@ function loop(ts){
 }
 
 function renderCard(){
-  const echoAtJev = tally(D.student, D.jev[0].ms);
   const E = tally(D.student, BEAT);
   const res = [
     {cls:"l", name:"Echo", v:(E.total/E.done).toFixed(1), k:"average score", r:RATE.student,
-     x:echoAtJev.done.toLocaleString()+" games in the time Jev played one"},
+     x:E.done.toLocaleString()+" games"},
     {cls:"c", name:"Jev", v:D.jev[0].score, k:"score", r:RATE.jev, x:"1 game"},
-    {cls:"d", name:"Echo + search", v:D.search[0].score, k:"score", r:RATE.search,
-     x:"1 game, at "+fmtRate(RATE.search)+" moves/s"},
+    {cls:"d", name:"Echo + search", v:D.search[0].score, k:"score", r:RATE.search, x:"1 game"},
   ];
   $("res").innerHTML = res.map(o=>
     '<div class="r '+o.cls+'"><div class="rn">'+o.name+'</div>'+
