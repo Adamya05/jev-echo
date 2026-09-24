@@ -8,7 +8,8 @@ import json, pathlib, statistics as st
 
 R = pathlib.Path("results")
 REPLAY = R / "marathon_crash.json"                 # record_replay.py
-FAIR = [R / "heldout_crash.json", R / "heldout_crash_echo.json"]   # compare.py, boards 100-119
+# compare.py on boards 100-119, which no training or tuning touched
+FAIR = [p for p in (R / "heldout_crash.json", R / "heldout_crash_echo.json", R / "heldout_crash_tree.json") if p.exists()]
 EXAMPLE = pathlib.Path("viz/example_move.json")    # one position, for "How they play"
 
 
@@ -39,7 +40,7 @@ def pack_fair(rows):
     by = {}
     for r in rows:
         by.setdefault(r["config"], {})[r["seed"]] = r
-    search = next(c for c in by if c.startswith("STUDENT(board)+treeS"))
+    search = next(c for c in by if c.startswith("STUDENT(board)+tree@"))
     names = {"JEV(raw)": "jev", "STUDENT(board)": "echo", search: "search"}
     fair = {"boards": len(by["JEV(raw)"])}
     for cfg, key in names.items():
@@ -52,6 +53,13 @@ def pack_fair(rows):
                                "se": round(st.stdev(diff) / len(diff) ** 0.5, 2),
                                "w": sum(x > 0 for x in diff), "l": sum(x < 0 for x in diff),
                                "t": sum(x == 0 for x in diff)}
+    # Jev in search mode: the tree's Echo calls per move, asked of Jev instead.
+    jev, tree = by["JEV(raw)"].values(), by[search].values()
+    calls = sum(r["calls"] for r in tree) / sum(r["steps"] for r in tree)
+    moves = st.mean(r["steps"] for r in tree)
+    usd = sum(r["usd"] for r in jev) / sum(r["calls"] for r in jev)
+    fair["jev_search"] = {"calls": round(calls), "hours": round(moves * calls * fair["jev"]["ms"] / 3.6e6, 1),
+                          "usd": round(moves * calls * usd, 2)}
     return fair
 
 
@@ -62,13 +70,17 @@ speed = float(f"{F['jev']['ms'] / F['echo']['ms']:.2g}")
 times = round(F["search"]["mean"] / F["jev"]["mean"])
 print(f"replay: jev {D['jev'][0]['score']}, search {D['search'][0]['score']}, "
       f"echo {len(D['student'])} games to {D['horizon_ms']/1000:.0f}s (pause {beat/1000:.1f}s)")
+J = F["jev_search"]
 print(f"{F['boards']} held-out boards: jev {F['jev']['mean']} echo {F['echo']['mean']} "
-      f"search {F['search']['mean']}  |  {speed:,.0f}x faster, {times}x the score")
+      f"search {F['search']['mean']}  |  {speed:,.0f}x faster, {times}x the score  |  "
+      f"Jev in search mode: {J['calls']} calls/move, {J['hours']} h, ${J['usd']:.2f} a game")
 
 tpl = pathlib.Path("viz/marathon_tpl.html").read_text()
 out = (tpl.replace("/*__DATA__*/", json.dumps(D, separators=(",", ":")))
           .replace("/*__CORE__*/", pathlib.Path("viz/snake_core.js").read_text())
-          .replace("__SPEED__", f"{speed:,.0f}×").replace("__TIMES__", f"{times}×"))
+          .replace("__SPEED__", f"{speed:,.0f}×").replace("__TIMES__", f"{times}×")
+          .replace("__CALLS__", str(J["calls"])).replace("__HOURS__", f"{J['hours']:g}")
+          .replace("__USD__", f"${J['usd']:.2f}"))
 pathlib.Path("docs").mkdir(exist_ok=True)
 pathlib.Path("docs/index.html").write_text(out)
 print(f"page {len(out)/1024:.0f} KB")

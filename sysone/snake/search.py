@@ -478,54 +478,36 @@ class BoardStudent:
         return Step(move=move, calls=1, ms=ms, prior=p, improved=p)
 
 
-DEATH = -20.0    # tree leaf value for a dead or boxed-in snake
-
-
 class TreeSearch:
-    """Every branch, weighted by Echo: an expectation tree.
+    """Echo + search: every move, several turns ahead, weighed by Echo.
 
-    Level by level, every live state is expanded into all the moves it is
-    offered. Echo scores a whole level in one batch. A pellet eaten on
-    look-ahead move k is worth 1/k, so sooner is better; a leaf is worth its
-    pellets if the snake is alive, and DEATH (-20) if it died; a parent is worth the sum of
-    P(branch) x value(branch), with P from Echo. At the root we choose, so
-    we take the best branch (ties go to Echo's pick).
+    The tree is expanded level by level -- every move each live state is
+    offered -- and Echo scores a whole level in one batch. Depth grows until
+    the next level is estimated not to fit in the time budget, so a move
+    takes somewhat less than `budget_ms` (about 100 ms at 181).
 
-    Depth grows until the next level would overrun the time budget, so it
-    gets the same time per move as Jev. Simulated food lands on a random
-    empty cell (sim_clone), never where the real game will put it.
+    Values, in pellets:
+      leaf   pellets eaten inside the tree, or -(score + 10) if the snake died
+             or was boxed in: you lose everything so far, plus the pain of dying
+      node   children weighted by pi = P_echo x exp(v / tau), normalised; the
+             node is worth sum(pi x v)
 
-    Variants (Echo knows a good move in the short term; the tree checks the
-    long term):
-      leaf="echo"  a live leaf is worth Echo's P for the move that reached it
-      root_vote    each root move also gets Echo's P for it, added to its value
-      backup="max"/"avg"  a live leaf is worth the pellets eaten inside the
-                   tree; dying costs everything so far, -(score + 10); a parent
-                   is max (or sum) over children of P x (1 + child value), and
-                   the root picks the move with the highest P x (1 + value)
-      backup="rel" same leaves (pellets in tree; -(score + 10) if dead), a
-                   parent is the sum of P x child value, and the root picks
-                   the highest value + w x P (w small: Echo breaks near-ties)
-      backup="soft" same leaves; every node, the root included, weights its
-                   children by pi = P x exp(v / tau), normalised, and is worth
-                   sum pi x v -- the search's model of its own future play:
-                   Echo's judgement, reweighted by what the search sees. The
-                   root plays the move with the highest pi.
+    pi is the search's model of its own future play: Echo's short-term
+    judgement, reweighted by what the tree sees further out. Suicides and
+    traps drop out without any hard rule, and when every child is equally
+    good, pi is just Echo's P. The root plays the move with the highest pi.
+
+    Simulated food lands on a random empty cell (sim_clone), never where the
+    real game will put it.
     """
 
-    def __init__(self, budget_ms: float = 197.0, path: str = ECHO,
-                 max_depth: int = 16, leaf: str = "pellets",
-                 root_vote: bool = False, backup: str = "exp",
-                 w: float = 0.15, tau: float = 1.0) -> None:
+    def __init__(self, budget_ms: float = 181.0, path: str = ECHO,
+                 max_depth: int = 16, tau: float = 1.0) -> None:
         from sysone.snake.boardnet import BoardBackend, MOVES
         self.echo = BoardBackend(path)
         self.moves = MOVES
-        self.budget, self.max_depth = budget_ms, max_depth
-        self.leaf, self.root_vote, self.backup, self.w, self.tau = leaf, root_vote, backup, w, tau
-        tag = ("P" if leaf == "echo" else "") + ("V" if root_vote else "") + \
-              {"exp": "", "max": "M", "avg": "A", "rel": f"R{w:g}", "first": "F",
-               "soft": f"S{tau:g}"}[backup]
-        self.name = f"STUDENT(board)+tree{tag}@{int(budget_ms)}ms"
+        self.budget, self.max_depth, self.tau = budget_ms, max_depth, tau
+        self.name = f"STUDENT(board)+tree@{int(budget_ms)}ms"
 
     def _batch_probs(self, games, facts_list) -> list[dict[str, float]]:
         import mlx.core as mx
@@ -538,7 +520,7 @@ class TreeSearch:
         return [{mv: rows[i][j] for j, mv in enumerate(self.moves) if mv in f}
                 for i, f in enumerate(facts_list)]
 
-    def _soft(self, ps: list[float], vs: list[float]) -> list[float]:
+    def _pi(self, ps: list[float], vs: list[float]) -> list[float]:
         """pi proportional to P x exp(v / tau), computed stably."""
         top = max(vs)
         ws = [p * math.exp((v - top) / self.tau) for p, v in zip(ps, vs)]
@@ -555,106 +537,54 @@ class TreeSearch:
             return Step(move=next(iter(facts)))
 
         t0 = time.perf_counter()
-        # node = [game, parent index, P(branch), children, pellets worth]
-        nodes = [[game, -1, 1.0, [], 0.0]]
-        frontier = [0]
-        levels = [frontier]
-        calls = 0
+        # node = [game, P of the move that reached it, children]
+        nodes = [[game, 1.0, []]]
+        frontier, depth, calls = [0], 0, 0
         boxed: set[int] = set()
-        while len(levels) <= self.max_depth:
+        while depth < self.max_depth:
             t_level = time.perf_counter()
             live = [i for i in frontier if nodes[i][0].alive]
             offered = [nodes[i][0].options() for i in live]
-            for i, f in zip(live, offered):
-                if not f:                        # boxed in: the game is over
-                    boxed.add(i)
+            boxed.update(i for i, f in zip(live, offered) if not f)
             expand = [(i, f) for i, f in zip(live, offered) if f]
             if not expand:
                 break
             probs = self._batch_probs([nodes[i][0] for i, _ in expand], [f for _, f in expand])
             calls += len(expand)
             nxt = []
-            k = len(levels)                      # look-ahead move number of this step
             for (i, f), pr in zip(expand, probs):
-                parent = nodes[i]
                 for mv in f:
-                    g2 = parent[0].sim_clone(rng)
+                    g2 = nodes[i][0].sim_clone(rng)
                     g2.step(mv)
-                    worth = parent[4] + (g2.score - parent[0].score) / k
-                    parent[3].append(len(nodes))
-                    nodes.append([g2, i, pr[mv], [], worth])
+                    nodes[i][2].append(len(nodes))
+                    nodes.append([g2, pr[mv], []])
                     nxt.append(len(nodes) - 1)
-            frontier = nxt
-            levels.append(frontier)
+            frontier, depth = nxt, depth + 1
             spent = (time.perf_counter() - t0) * 1000
             last = (time.perf_counter() - t_level) * 1000
-            # Next level is about (branching) times this one; stop if it won't fit.
-            grow = len(nxt) / max(len(live), 1)
-            if spent + last * grow > self.budget:
+            # The next level is about (branching) times this one; stop if it won't fit.
+            if spent + last * len(nxt) / max(len(live), 1) > self.budget:
                 break
 
-        # Back up: leaf = pellets worth if alive else DEATH; parent = sum P x child value.
-        value = [0.0] * len(nodes)
         root_score = game.score
-        if self.backup != "exp":
-            for i in range(len(nodes) - 1, -1, -1):
-                g, _, _, kids, _ = nodes[i]
-                if self.backup == "first":           # the first tree, as it was
-                    value[i] = (0.0 if not g.alive else float(g.score) if not kids
-                                else sum(nodes[k][2] * value[k] for k in kids))
-                elif not g.alive or i in boxed:
-                    value[i] = -(g.score + 10.0)     # lose all progress, plus the pain of dying
-                elif not kids:
-                    value[i] = float(g.score - root_score)   # pellets eaten inside the tree
-                elif self.backup == "rel":
-                    value[i] = sum(nodes[k][2] * value[k] for k in kids)
-                elif self.backup == "soft":
-                    pi = self._soft([nodes[k][2] for k in kids], [value[k] for k in kids])
-                    value[i] = sum(w * value[k] for w, k in zip(pi, kids))
-                else:
-                    terms = [nodes[k][2] * (1.0 + value[k]) for k in kids]
-                    value[i] = max(terms) if self.backup == "max" else sum(terms)
-            root_kids = nodes[0][3]
-            prior = {m: nodes[k][2] for m, k in zip(facts, root_kids)}
-            if self.backup == "first":
-                vals = {m: value[k] for m, k in zip(facts, root_kids)}
-                best = max(vals, key=lambda m: (round(vals[m], 9), prior[m]))
-                return Step(move=best, calls=calls, ms=(time.perf_counter() - t0) * 1000,
-                            prior=prior, improved=vals, visits={"depth": len(levels) - 1})
-            if self.backup == "soft":
-                pi = self._soft([prior[m] for m in facts], [value[k] for k in root_kids])
-                vals = dict(zip(facts, pi))
-                best = max(vals, key=vals.get)
-                return Step(move=best, calls=calls, ms=(time.perf_counter() - t0) * 1000,
-                            prior=prior, improved=vals,
-                            visits={"depth": len(levels) - 1,
-                                    "vals": {m: value[k] for m, k in zip(facts, root_kids)}})
-            if self.backup == "rel":
-                vals = {m: value[k] + self.w * prior[m]
-                        for m, k in zip(facts, root_kids)}
-            else:
-                vals = {m: prior[m] * (1.0 + value[k]) for m, k in zip(facts, root_kids)}
-            best = max(vals, key=vals.get)
-            return Step(move=best, calls=calls, ms=(time.perf_counter() - t0) * 1000,
-                        prior=prior, improved=softmax(vals, TARGET_TEMP),
-                        visits={"depth": len(levels) - 1, "vals": vals})
-        for i in range(len(nodes) - 1, -1, -1):
-            g, _, _, kids, worth = nodes[i]
+        value = [0.0] * len(nodes)
+        for i in range(len(nodes) - 1, 0, -1):     # children always come after parents
+            g, _, kids = nodes[i]
             if not g.alive or i in boxed:
-                value[i] = DEATH
+                value[i] = -(g.score + 10.0)
             elif not kids:
-                value[i] = nodes[i][2] if self.leaf == "echo" else worth
+                value[i] = float(g.score - root_score)
             else:
-                value[i] = sum(nodes[k][2] * value[k] for k in kids)
+                pi = self._pi([nodes[k][1] for k in kids], [value[k] for k in kids])
+                value[i] = sum(w * value[k] for w, k in zip(pi, kids))
 
-        root_kids = nodes[0][3]
-        prior = {m: nodes[k][2] for m, k in zip(facts, root_kids)}
-        vals = {m: value[k] + (prior[m] if self.root_vote else 0.0)
-                for m, k in zip(facts, root_kids)}
-        best = max(vals, key=lambda m: (round(vals[m], 9), prior[m]))
-        return Step(move=best, calls=calls, ms=(time.perf_counter() - t0) * 1000,
-                    prior=prior, improved=softmax(vals, TARGET_TEMP),
-                    visits={"depth": len(levels) - 1})
+        kids = nodes[0][2]
+        prior = {m: nodes[k][1] for m, k in zip(facts, kids)}
+        pi = dict(zip(facts, self._pi([prior[m] for m in facts], [value[k] for k in kids])))
+        return Step(move=max(pi, key=pi.get), calls=calls,
+                    ms=(time.perf_counter() - t0) * 1000, prior=prior, improved=pi,
+                    visits={"depth": depth,
+                            "vals": {m: value[k] for m, k in zip(facts, kids)}})
 
 
 class BudgetSearch:
@@ -922,15 +852,9 @@ def build(name: str, backend: Backend | None, iterations: int = 160,
         return StudentPolicy("results/student_prior.npz", "prior")
     if name == "board_student":
         return BoardStudent()
-    if name.startswith("board_tree"):            # board_tree[P][V]_<ms>
-        kind, ms = name.split("_")[1], name.split("_")[-1]
-        return TreeSearch(budget_ms=float(ms) if ms.isdigit() else 197.0,
-                          leaf="echo" if "P" in kind else "pellets",
-                          root_vote="V" in kind,
-                          backup="max" if "M" in kind else "avg" if "A" in kind
-                          else "rel" if "R" in kind else "soft" if "S" in kind
-                          else "first" if "F" in kind else "exp",
-                          w=float("0." + kind.split("R")[1]) if "R" in kind and kind.split("R")[1] else 0.001)
+    if name.startswith("board_tree_"):           # board_tree_<ms>
+        ms = name.split("_")[-1]
+        return TreeSearch(budget_ms=float(ms) if ms.isdigit() else 181.0)
     if name.startswith("board_budget"):
         ms = name.split("_")[-1]
         return BudgetSearch(budget_ms=float(ms) if ms.isdigit() else 208.0)

@@ -295,8 +295,8 @@
     <div><div class="fig d">__TIMES__ the score</div>
       <p>With search, Echo looks seven turns ahead at every move before it commits, and it's still no slower than Jev.</p></div>
   </div>
-  <p class="stat">To play like Echo + search, Jev would need about 324 calls per move:
-    roughly <strong>7.5 hours and $2.70 a game</strong>.</p>
+  <p class="stat">To play like Echo + search, Jev would need about __CALLS__ calls per move:
+    roughly <strong>__HOURS__ hours and __USD__ a game</strong>.</p>
   <div class="chart" id="chart"></div>
   <p class="foot" id="chartFoot"></p>
 </section>
@@ -347,7 +347,7 @@ uv run python collect_raw.py --games 90 --out results/dataset_board_crash.npz</p
     --games 250 --max-steps 2000 --seed-offset 5000 --out results/dataset_board_crash_dagger1.npz</pre></li>
     <li><p>Race them.<br><span class="detail">On boards none of the training touched.</span></p>
       <pre>uv run python -m sysone.snake.compare --games 20 --seed-offset 100 --max-steps 2000 \
-    --configs jev_raw board_student board_treeS_181</pre></li>
+    --configs jev_raw board_student board_tree_181</pre></li>
   </ol>
   <p class="note">Snake makes looking ahead cheap because the next board is exactly predictable. In
     other problems, the saved time will be better spent on something else.</p>

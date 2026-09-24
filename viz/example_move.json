@@ -32,5 +32,5 @@
  "depth": 7,
  "boards": 363,
  "search_ms": 75,
- "note": "Board 0, move 32, crashes allowed. Jev via OpenRouter; Echo and the soft tree (board_treeS_181) locally."
+ "note": "Board 0, move 32, crashes allowed. Jev via OpenRouter; Echo and the tree locally. Made by example_move.py."
 }

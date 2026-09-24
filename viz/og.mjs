@@ -6,7 +6,7 @@ import { tmpdir } from "node:os";
 import { join, resolve } from "node:path";
 import { pathToFileURL } from "node:url";
 
-const PAGE = pathToFileURL(resolve("docs/index.html")).href + "?capture&theme=dark&mode=net";
+const PAGE = pathToFileURL(resolve("docs/index.html")).href + "?capture&theme=dark";
 const OW = 1200, OH = 630, PORT = 9335;
 const profile = mkdtempSync(join(tmpdir(), "echo-og-"));
 const chrome = spawn("/Applications/Google Chrome.app/Contents/MacOS/Google Chrome",
