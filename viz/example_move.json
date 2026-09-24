@@ -1,0 +1,36 @@
+{
+ "board": "..........\n..........\n..........\n..........\n..........\n......o...\n..@oooo.*.\n..oo......\n..........\n..........",
+ "head": {
+  "row": 6,
+  "col": 2
+ },
+ "food": {
+  "row": 6,
+  "col": 8
+ },
+ "length": 8,
+ "jev": {
+  "RIGHT": 0.95,
+  "LEFT": 0.0,
+  "UP": 0.05
+ },
+ "echo": {
+  "UP": 0.075,
+  "LEFT": 0.006,
+  "RIGHT": 0.919
+ },
+ "search": {
+  "UP": 0.927,
+  "LEFT": 0.073,
+  "RIGHT": 0.0
+ },
+ "search_vals": {
+  "UP": -0.0,
+  "LEFT": -0.0,
+  "RIGHT": -15.0
+ },
+ "depth": 7,
+ "boards": 363,
+ "search_ms": 75,
+ "note": "Board 0, move 32, crashes allowed. Jev via OpenRouter; Echo and the soft tree (board_treeS_181) locally."
+}

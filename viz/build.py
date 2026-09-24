@@ -1,14 +1,15 @@
-"""Build docs/index.html: the page, with both modes' recordings inlined.
+"""Build docs/index.html: the page, with the recordings inlined.
 
     uv run python viz/build.py
+
+Crashes are allowed throughout (SNAKE_ALLOW_CRASH=1 when recording).
 """
 import json, pathlib, statistics as st
 
 R = pathlib.Path("results")
-MODES = {
-    "net":   {"replay": R / "marathon.json",       "fair": R / "fair_uncapped.json"},
-    "crash": {"replay": R / "marathon_crash.json", "fair": R / "fair_crash_uncapped.json"},
-}
+REPLAY = R / "marathon_crash.json"                 # record_replay.py
+FAIR = [R / "heldout_crash.json", R / "heldout_crash_echo.json"]   # compare.py, boards 100-119
+EXAMPLE = pathlib.Path("viz/example_move.json")    # one position, for "How they play"
 
 
 def pack_replay(d):
@@ -38,13 +39,13 @@ def pack_fair(rows):
     by = {}
     for r in rows:
         by.setdefault(r["config"], {})[r["seed"]] = r
-    search = next(c for c in by if c.startswith("STUDENT(board)+search"))
+    search = next(c for c in by if c.startswith("STUDENT(board)+treeS"))
     names = {"JEV(raw)": "jev", "STUDENT(board)": "echo", search: "search"}
-    fair = {}
+    fair = {"boards": len(by["JEV(raw)"])}
     for cfg, key in names.items():
         sc = [r["score"] for r in by[cfg].values()]
         fair[key] = {"mean": round(st.mean(sc), 1), "se": round(st.stdev(sc) / len(sc) ** 0.5, 2),
-                     "ms": round(st.median(r["ms"] for r in by[cfg].values()), 2)}
+                     "ms": round(st.median(r["ms"] for r in by[cfg].values()), 3)}
     for key, cfg in (("echo", "STUDENT(board)"), ("search", search)):
         diff = [by[cfg][s]["score"] - by["JEV(raw)"][s]["score"] for s in sorted(by[cfg])]
         fair["pair_" + key] = {"d": round(st.mean(diff), 2),
@@ -54,19 +55,20 @@ def pack_fair(rows):
     return fair
 
 
-ALL = {}
-for mode, src in MODES.items():
-    d, beat = pack_replay(json.loads(src["replay"].read_text()))
-    d["fair"] = pack_fair(json.loads(src["fair"].read_text()))
-    ALL[mode] = d
-    F = d["fair"]
-    print(f"{mode:<6} replay: jev {d['jev'][0]['score']}, search {d['search'][0]['score']}, "
-          f"echo {len(d['student'])} games to {d['horizon_ms']/1000:.0f}s (pause {beat/1000:.1f}s)  |  "
-          f"ten games: jev {F['jev']['mean']} echo {F['echo']['mean']} search {F['search']['mean']}")
+D, beat = pack_replay(json.loads(REPLAY.read_text()))
+D["fair"] = F = pack_fair([r for p in FAIR for r in json.loads(p.read_text())])
+D["example"] = json.loads(EXAMPLE.read_text())
+speed = float(f"{F['jev']['ms'] / F['echo']['ms']:.2g}")
+times = round(F["search"]["mean"] / F["jev"]["mean"])
+print(f"replay: jev {D['jev'][0]['score']}, search {D['search'][0]['score']}, "
+      f"echo {len(D['student'])} games to {D['horizon_ms']/1000:.0f}s (pause {beat/1000:.1f}s)")
+print(f"{F['boards']} held-out boards: jev {F['jev']['mean']} echo {F['echo']['mean']} "
+      f"search {F['search']['mean']}  |  {speed:,.0f}x faster, {times}x the score")
 
 tpl = pathlib.Path("viz/marathon_tpl.html").read_text()
-out = tpl.replace("/*__DATA__*/", json.dumps(ALL, separators=(",", ":")))
-out = out.replace("/*__CORE__*/", pathlib.Path("viz/snake_core.js").read_text())
+out = (tpl.replace("/*__DATA__*/", json.dumps(D, separators=(",", ":")))
+          .replace("/*__CORE__*/", pathlib.Path("viz/snake_core.js").read_text())
+          .replace("__SPEED__", f"{speed:,.0f}×").replace("__TIMES__", f"{times}×"))
 pathlib.Path("docs").mkdir(exist_ok=True)
 pathlib.Path("docs/index.html").write_text(out)
 print(f"page {len(out)/1024:.0f} KB")

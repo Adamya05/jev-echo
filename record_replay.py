@@ -22,7 +22,7 @@ a = ap.parse_args()
 out = pathlib.Path("results") / ("marathon_crash.json" if ALLOW_CRASH else "marathon.json")
 jev = (json.loads(out.read_text())["jev"][0] if a.reuse_jev
        else one_game(search.build("jev_raw", None), 0, 600))
-srch = one_game(search.build(f"board_budget_{a.budget}", None), 0, 600)
+srch = one_game(search.build(f"board_treeS_{a.budget}", None), 0, 2000)
 jev["t0"] = srch["t0"] = 0.0
 echo = marathon(search.build("board_student", None), max(jev["ms"], srch["ms"]) * 1.35, 0, 6)
 
