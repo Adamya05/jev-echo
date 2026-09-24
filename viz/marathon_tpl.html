@@ -291,9 +291,9 @@
   <h2>Why build Echo?</h2>
   <div class="figs">
     <div><div class="fig l">__SPEED__ faster</div>
-      <p>Echo alone picks the same move as Jev 93% of the time.*</p></div>
+      <p>0.2 ms a move against ~160 ms, and Echo alone picks the same move as Jev 93% of the time.*</p></div>
     <div><div class="fig d">__TIMES__ the score</div>
-      <p>With search, Echo looks seven turns ahead at every move before it commits, and it's still no slower than Jev.</p></div>
+      <p>With search, Echo looks about seven turns ahead at every move before it commits, and it's still no slower than Jev.</p></div>
   </div>
   <p class="stat">To play like Echo + search, Jev would need about __CALLS__ calls per move:
     roughly <strong>__HOURS__ hours and __USD__ a game</strong>.</p>
@@ -347,7 +347,7 @@ uv run python collect_raw.py --games 90 --out results/dataset_board_crash.npz</p
     --games 250 --max-steps 2000 --seed-offset 5000 --out results/dataset_board_crash_dagger1.npz</pre></li>
     <li><p>Race them.<br><span class="detail">On boards none of the training touched.</span></p>
       <pre>uv run python -m sysone.snake.compare --games 20 --seed-offset 100 --max-steps 2000 \
-    --configs jev_raw board_student board_tree_181</pre></li>
+    --workers 1 --configs jev_raw board_student board_tree_181</pre></li>
   </ol>
   <p class="note">Snake makes looking ahead cheap because the next board is exactly predictable. In
     other problems, the saved time will be better spent on something else.</p>
@@ -380,7 +380,7 @@ const PANELS = [
   {key:"jev",     name:"Jev",           where:"cloud", tone:"cloud", row:"c",
    desc:"A general-purpose System 1 model."},
   {key:"search",  name:"Echo + search", where:"local", tone:"deep",  row:"d",
-   desc:"Echo, looking seven moves ahead."},
+   desc:"Echo, looking about seven moves ahead."},
 ];
 const SPEEDS = [1,2,5];
 let speed=1, playing=true, clock=0, last=null, P=[], paused_at_beat=false;
@@ -545,7 +545,7 @@ function miniBoard(){
   return h + '</div>';
 }
 function dist(p, cap){
-  const order = ["UP","LEFT","RIGHT"], best = order.reduce((a,b)=>p[a]>=p[b]?a:b);
+  const order = ["UP","DOWN","LEFT","RIGHT"].filter(m => m in p), best = order.reduce((a,b)=>p[a]>=p[b]?a:b);
   return '<div class="dist">'+order.map(m =>
     '<div class="drow'+(m===best?" top":"")+'"><span>'+m+'</span>'+
     '<div class="dtrack"><div class="dbar" style="width:'+(p[m]*100).toFixed(1)+'%"></div></div>'+
@@ -572,16 +572,19 @@ const GLYPH = {
 };
 function treeGlyph(){
   const X = D.example;
+  const moves = ["UP","DOWN","LEFT","RIGHT"].filter(m => m in X.search_vals);
+  const dead = moves.filter(m => X.search_vals[m] < -1);
   let s = '<svg viewBox="0 0 170 150" role="img" aria-label="Echo plus search: every move played '+X.depth+
-    ' turns ahead; RIGHT runs into the body">';
-  const root=[10,70], kids=[["UP",18],["LEFT",70],["RIGHT",122]];
+    ' turns ahead'+(dead.length ? '; '+dead.join(' and ')+' ends the game' : '')+'">';
+  const ys = moves.length === 2 ? [40,100] : [18,70,122];
+  const kids = moves.map((m,i)=>[m, ys[i]]);
   s += '<circle cx="10" cy="70" r="5.5" fill="var(--deep)"/>';
   kids.forEach(([m,ky])=>{
     const kx=62, dead=X.search_vals[m] < -1;
     if(dead){
       s += '<line x1="10" y1="70" x2="'+kx+'" y2="'+ky+'" stroke="var(--ink-faint)" stroke-width="1.6" stroke-dasharray="4 3"/>'+
         '<text x="'+kx+'" y="'+(ky+6)+'" text-anchor="middle" font-size="17" fill="var(--ink)">✕</text>'+
-        '<text x="'+(kx+14)+'" y="'+(ky+4)+'" class="gm" fill="var(--ink-soft)">'+m+' hits its body</text>';
+        '<text x="'+(kx+14)+'" y="'+(ky+4)+'" class="gm" fill="var(--ink-soft)">'+m+' ends the game</text>';
     } else {
       s += '<line x1="10" y1="70" x2="'+kx+'" y2="'+ky+'" stroke="var(--deep)" stroke-width="1.8"/>'+
         '<circle cx="'+kx+'" cy="'+ky+'" r="4" fill="var(--deep)"/>'+
@@ -615,7 +618,7 @@ function renderFlow(){
     '<div class="frow l">'+boardIn+arrow(ms(F.echo.ms))+'<div class="glyph">'+GLYPH.chip+'</div>'+arrow("","out")+
       dist(X.echo, "Learnt from Jev, mistake included.")+'</div>'+
     '<div class="frow d">'+boardIn+arrow(ms(F.search.ms))+'<div class="glyph">'+treeGlyph()+'</div>'+arrow("","out")+
-      dist(X.search, "Sees the crash and goes around.")+'</div>';
+      dist(X.search, "Rules out the crash; Echo's own preference picks the rest.")+'</div>';
 }
 
 /* ---- speed against score ---- */

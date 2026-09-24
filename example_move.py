@@ -10,7 +10,9 @@ timing, so a re-run can pick a slightly different position.
 import json, pathlib, random
 from sysone.core import get_backend
 from sysone.snake import policy as P, search
-from sysone.snake.game import Snake
+from sysone.snake.game import ALLOW_CRASH, Snake
+
+assert ALLOW_CRASH, "run with SNAKE_ALLOW_CRASH=1: the page is the crashes-allowed game"
 
 tree = search.build("board_tree_181", None)
 g = Snake(seed=0)
@@ -36,6 +38,6 @@ ex = {"board": state["board"], "head": state["head"], "food": state["food"],
       "search_vals": {m: round(v, 2) for m, v in st.visits["vals"].items()},
       "depth": st.visits["depth"], "boards": st.calls, "search_ms": round(st.ms),
       "note": f"Board 0, move {g.steps}, crashes allowed. Jev via OpenRouter; "
-              "Echo and the tree locally."}
+              "Echo and the tree locally. Made by example_move.py."}
 pathlib.Path("viz/example_move.json").write_text(json.dumps(ex, indent=1))
 print(f"move {g.steps}: jev {ex['jev']}  echo {ex['echo']}  tree {ex['search']}")

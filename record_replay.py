@@ -4,13 +4,16 @@
 
 Jev and Echo + search (the tree) play one game each. Echo plays game after
 game for a little longer than the slower of the two, so it keeps going on
-the page. Costs one Jev game (about $0.01). --reuse-jev keeps the Jev game
+the page. Costs one Jev game (under $0.01). --reuse-jev keeps the Jev game
 already recorded and only re-records the local players, e.g. after
 retraining Echo.
 """
 import argparse, json, pathlib
 from marathon import marathon, one_game
 from sysone.snake import search
+from sysone.snake.game import ALLOW_CRASH
+
+assert ALLOW_CRASH, "run with SNAKE_ALLOW_CRASH=1: the page is the crashes-allowed game"
 
 CAP = 2000   # moves per game, the same cap as the comparisons
 

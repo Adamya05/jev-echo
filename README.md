@@ -91,12 +91,10 @@ Race them on the held-out boards, record the replay and the example position,
 and build the page:
 
 ```bash
-uv run python -m sysone.snake.compare --games 20 --seed-offset 100 --max-steps 2000 \
-    --configs jev_raw board_tree_181 --save results/heldout_crash.json
-# Echo alone on one worker, so its timing isn't sharing the CPU
-uv run python -m sysone.snake.compare --games 20 --seed-offset 100 --max-steps 2000 \
-    --configs board_student --workers 1 --save results/heldout_crash_echo.json
-uv run python record_replay.py      # the race on the page, ~$0.01
+# One worker, so nobody's timing (or the tree's depth) is sharing the CPU
+uv run python -m sysone.snake.compare --games 20 --seed-offset 100 --max-steps 2000 --workers 1 \
+    --configs jev_raw board_student board_tree_181 --save results/heldout_crash.json
+uv run python record_replay.py      # the race on the page, under $0.01
 uv run python example_move.py       # the "How they play" position, one Jev call
 uv run python viz/build.py          # -> docs/index.html
 node viz/og.mjs                     # -> docs/og.png, the link preview
@@ -124,15 +122,16 @@ Kept in the repo; the page doesn't need them.
 
 - **A version where the game never offers a fatal move** (tag `v1-no-crash`).
   There, plain copying was enough: Echo matched Jev without the extra DAgger
-  rounds. Run the commands above without `SNAKE_ALLOW_CRASH=1` to get it.
+  rounds. Check out that tag to run it.
 - **A flat Monte Carlo search** (`BudgetSearch`): about 50 random 8-move
-  futures per move. It beat Jev by +69% here, against 5× for the tree.
+  futures per move. On boards 0–9 it beat Jev by +69%; the tree does 5× on
+  the held-out boards.
 - **A leak.** Search used to copy the game's random generator, so it knew
-  where the next food would appear. `sim_clone()` fixed it; the flat search's
-  result fell from +93% to +69%.
+  where the next food would appear. `sim_clone()` fixed it; on boards 0–9 the
+  flat search's lead over Jev fell from +93% to +69%.
 - **Other tree backups** (plain expectation, max, fixed death penalties, Echo's
-  vote at the root) are in commit `142ef1e`. The one kept beat them on
-  held-out boards.
+  vote at the root) are in commit `142ef1e`. The one kept beat them on the
+  tuning boards (0–9), and beat the first tree on the held-out boards.
 - **A student on precomputed features** (`features.py`, `student.py`, `train.py`),
   **[Laya](https://github.com/mizorewww/laya-mlx)** as an off-the-shelf local
   model (`collect_laya.py`, scored near zero), **MCTS and best-of-N** on Jev's
