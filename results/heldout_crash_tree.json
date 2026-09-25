@@ -1,0 +1,222 @@
+[
+ {
+  "config": "STUDENT(board)+tree@181ms",
+  "seed": 100,
+  "score": 32,
+  "steps": 275,
+  "calls": 81156,
+  "usd": 0.0,
+  "ms": 104.27270794752985,
+  "greedy": 0.7927272727272727,
+  "death": "collision"
+ },
+ {
+  "config": "STUDENT(board)+tree@181ms",
+  "seed": 101,
+  "score": 39,
+  "steps": 410,
+  "calls": 130683,
+  "usd": 0.0,
+  "ms": 100.63070902833715,
+  "greedy": 0.7804878048780488,
+  "death": "collision"
+ },
+ {
+  "config": "STUDENT(board)+tree@181ms",
+  "seed": 102,
+  "score": 38,
+  "steps": 459,
+  "calls": 144878,
+  "usd": 0.0,
+  "ms": 104.8225830309093,
+  "greedy": 0.8126361655773421,
+  "death": "collision"
+ },
+ {
+  "config": "STUDENT(board)+tree@181ms",
+  "seed": 103,
+  "score": 45,
+  "steps": 466,
+  "calls": 156230,
+  "usd": 0.0,
+  "ms": 102.15681249974295,
+  "greedy": 0.8175965665236051,
+  "death": "collision"
+ },
+ {
+  "config": "STUDENT(board)+tree@181ms",
+  "seed": 104,
+  "score": 26,
+  "steps": 237,
+  "calls": 65451,
+  "usd": 0.0,
+  "ms": 99.44991709198803,
+  "greedy": 0.8438818565400844,
+  "death": "collision"
+ },
+ {
+  "config": "STUDENT(board)+tree@181ms",
+  "seed": 105,
+  "score": 30,
+  "steps": 208,
+  "calls": 57646,
+  "usd": 0.0,
+  "ms": 100.8540204493329,
+  "greedy": 0.7644230769230769,
+  "death": "collision"
+ },
+ {
+  "config": "STUDENT(board)+tree@181ms",
+  "seed": 106,
+  "score": 24,
+  "steps": 174,
+  "calls": 48087,
+  "usd": 0.0,
+  "ms": 106.44458298338577,
+  "greedy": 0.7528735632183908,
+  "death": "collision"
+ },
+ {
+  "config": "STUDENT(board)+tree@181ms",
+  "seed": 107,
+  "score": 44,
+  "steps": 373,
+  "calls": 128052,
+  "usd": 0.0,
+  "ms": 104.61545898579061,
+  "greedy": 0.8150134048257373,
+  "death": "collision"
+ },
+ {
+  "config": "STUDENT(board)+tree@181ms",
+  "seed": 108,
+  "score": 42,
+  "steps": 417,
+  "calls": 143720,
+  "usd": 0.0,
+  "ms": 106.86491604428738,
+  "greedy": 0.7745803357314148,
+  "death": "collision"
+ },
+ {
+  "config": "STUDENT(board)+tree@181ms",
+  "seed": 109,
+  "score": 35,
+  "steps": 248,
+  "calls": 84612,
+  "usd": 0.0,
+  "ms": 107.9126664553769,
+  "greedy": 0.7943548387096774,
+  "death": "collision"
+ },
+ {
+  "config": "STUDENT(board)+tree@181ms",
+  "seed": 110,
+  "score": 44,
+  "steps": 510,
+  "calls": 171967,
+  "usd": 0.0,
+  "ms": 103.07754197856411,
+  "greedy": 0.8,
+  "death": "collision"
+ },
+ {
+  "config": "STUDENT(board)+tree@181ms",
+  "seed": 111,
+  "score": 25,
+  "steps": 178,
+  "calls": 45004,
+  "usd": 0.0,
+  "ms": 102.87516698008403,
+  "greedy": 0.797752808988764,
+  "death": "collision"
+ },
+ {
+  "config": "STUDENT(board)+tree@181ms",
+  "seed": 112,
+  "score": 52,
+  "steps": 498,
+  "calls": 186940,
+  "usd": 0.0,
+  "ms": 104.58433354506269,
+  "greedy": 0.8473895582329317,
+  "death": "collision"
+ },
+ {
+  "config": "STUDENT(board)+tree@181ms",
+  "seed": 113,
+  "score": 42,
+  "steps": 474,
+  "calls": 165248,
+  "usd": 0.0,
+  "ms": 104.11212552571669,
+  "greedy": 0.770042194092827,
+  "death": "collision"
+ },
+ {
+  "config": "STUDENT(board)+tree@181ms",
+  "seed": 114,
+  "score": 47,
+  "steps": 487,
+  "calls": 164666,
+  "usd": 0.0,
+  "ms": 106.14570893812925,
+  "greedy": 0.7535934291581109,
+  "death": "collision"
+ },
+ {
+  "config": "STUDENT(board)+tree@181ms",
+  "seed": 115,
+  "score": 48,
+  "steps": 524,
+  "calls": 217164,
+  "usd": 0.0,
+  "ms": 102.06208354793489,
+  "greedy": 0.7900763358778626,
+  "death": "collision"
+ },
+ {
+  "config": "STUDENT(board)+tree@181ms",
+  "seed": 116,
+  "score": 43,
+  "steps": 474,
+  "calls": 188228,
+  "usd": 0.0,
+  "ms": 102.72468795301393,
+  "greedy": 0.8185654008438819,
+  "death": "collision"
+ },
+ {
+  "config": "STUDENT(board)+tree@181ms",
+  "seed": 117,
+  "score": 45,
+  "steps": 380,
+  "calls": 134849,
+  "usd": 0.0,
+  "ms": 103.85920852422714,
+  "greedy": 0.8078947368421052,
+  "death": "collision"
+ },
+ {
+  "config": "STUDENT(board)+tree@181ms",
+  "seed": 118,
+  "score": 53,
+  "steps": 694,
+  "calls": 399806,
+  "usd": 0.0,
+  "ms": 101.95531253702939,
+  "greedy": 0.8141210374639769,
+  "death": "collision"
+ },
+ {
+  "config": "STUDENT(board)+tree@181ms",
+  "seed": 119,
+  "score": 21,
+  "steps": 142,
+  "calls": 36597,
+  "usd": 0.0,
+  "ms": 101.33941646199673,
+  "greedy": 0.7535211267605634,
+  "death": "collision"
+ }
+]

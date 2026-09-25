@@ -1,0 +1,222 @@
+[
+ {
+  "config": "STUDENT(board)",
+  "seed": 100,
+  "score": 5,
+  "steps": 39,
+  "calls": 39,
+  "usd": 0.0,
+  "ms": 0.20074995700269938,
+  "greedy": 0.7435897435897436,
+  "death": "collision"
+ },
+ {
+  "config": "STUDENT(board)",
+  "seed": 101,
+  "score": 9,
+  "steps": 67,
+  "calls": 67,
+  "usd": 0.0,
+  "ms": 0.202000024728477,
+  "greedy": 0.8656716417910447,
+  "death": "collision"
+ },
+ {
+  "config": "STUDENT(board)",
+  "seed": 102,
+  "score": 14,
+  "steps": 104,
+  "calls": 104,
+  "usd": 0.0,
+  "ms": 0.19483297364786267,
+  "greedy": 0.6826923076923077,
+  "death": "collision"
+ },
+ {
+  "config": "STUDENT(board)",
+  "seed": 103,
+  "score": 11,
+  "steps": 85,
+  "calls": 85,
+  "usd": 0.0,
+  "ms": 0.19445898942649364,
+  "greedy": 0.9529411764705882,
+  "death": "collision"
+ },
+ {
+  "config": "STUDENT(board)",
+  "seed": 104,
+  "score": 4,
+  "steps": 35,
+  "calls": 35,
+  "usd": 0.0,
+  "ms": 0.1906669931486249,
+  "greedy": 0.7428571428571429,
+  "death": "collision"
+ },
+ {
+  "config": "STUDENT(board)",
+  "seed": 105,
+  "score": 5,
+  "steps": 38,
+  "calls": 38,
+  "usd": 0.0,
+  "ms": 0.19941700156778097,
+  "greedy": 0.631578947368421,
+  "death": "collision"
+ },
+ {
+  "config": "STUDENT(board)",
+  "seed": 106,
+  "score": 4,
+  "steps": 32,
+  "calls": 32,
+  "usd": 0.0,
+  "ms": 0.19749999046325684,
+  "greedy": 0.75,
+  "death": "collision"
+ },
+ {
+  "config": "STUDENT(board)",
+  "seed": 107,
+  "score": 7,
+  "steps": 34,
+  "calls": 34,
+  "usd": 0.0,
+  "ms": 0.1995415659621358,
+  "greedy": 0.8529411764705882,
+  "death": "collision"
+ },
+ {
+  "config": "STUDENT(board)",
+  "seed": 108,
+  "score": 7,
+  "steps": 51,
+  "calls": 51,
+  "usd": 0.0,
+  "ms": 0.19704189617186785,
+  "greedy": 0.8823529411764706,
+  "death": "collision"
+ },
+ {
+  "config": "STUDENT(board)",
+  "seed": 109,
+  "score": 11,
+  "steps": 60,
+  "calls": 60,
+  "usd": 0.0,
+  "ms": 0.19870902178809047,
+  "greedy": 0.7166666666666667,
+  "death": "collision"
+ },
+ {
+  "config": "STUDENT(board)",
+  "seed": 110,
+  "score": 12,
+  "steps": 99,
+  "calls": 99,
+  "usd": 0.0,
+  "ms": 0.19545794930309057,
+  "greedy": 0.7171717171717171,
+  "death": "collision"
+ },
+ {
+  "config": "STUDENT(board)",
+  "seed": 111,
+  "score": 16,
+  "steps": 123,
+  "calls": 123,
+  "usd": 0.0,
+  "ms": 0.19945797976106405,
+  "greedy": 0.7642276422764228,
+  "death": "collision"
+ },
+ {
+  "config": "STUDENT(board)",
+  "seed": 112,
+  "score": 4,
+  "steps": 18,
+  "calls": 18,
+  "usd": 0.0,
+  "ms": 0.20931242033839226,
+  "greedy": 0.7777777777777778,
+  "death": "collision"
+ },
+ {
+  "config": "STUDENT(board)",
+  "seed": 113,
+  "score": 3,
+  "steps": 22,
+  "calls": 22,
+  "usd": 0.0,
+  "ms": 0.20039547234773636,
+  "greedy": 0.8181818181818182,
+  "death": "collision"
+ },
+ {
+  "config": "STUDENT(board)",
+  "seed": 114,
+  "score": 6,
+  "steps": 58,
+  "calls": 58,
+  "usd": 0.0,
+  "ms": 0.1990834716707468,
+  "greedy": 0.603448275862069,
+  "death": "collision"
+ },
+ {
+  "config": "STUDENT(board)",
+  "seed": 115,
+  "score": 7,
+  "steps": 34,
+  "calls": 34,
+  "usd": 0.0,
+  "ms": 0.2026660367846489,
+  "greedy": 0.8823529411764706,
+  "death": "collision"
+ },
+ {
+  "config": "STUDENT(board)",
+  "seed": 116,
+  "score": 8,
+  "steps": 63,
+  "calls": 63,
+  "usd": 0.0,
+  "ms": 0.1917090266942978,
+  "greedy": 0.9047619047619048,
+  "death": "collision"
+ },
+ {
+  "config": "STUDENT(board)",
+  "seed": 117,
+  "score": 5,
+  "steps": 28,
+  "calls": 28,
+  "usd": 0.0,
+  "ms": 0.20577042596414685,
+  "greedy": 0.6428571428571429,
+  "death": "collision"
+ },
+ {
+  "config": "STUDENT(board)",
+  "seed": 118,
+  "score": 4,
+  "steps": 22,
+  "calls": 22,
+  "usd": 0.0,
+  "ms": 0.1972499885596335,
+  "greedy": 0.7727272727272727,
+  "death": "collision"
+ },
+ {
+  "config": "STUDENT(board)",
+  "seed": 119,
+  "score": 16,
+  "steps": 85,
+  "calls": 85,
+  "usd": 0.0,
+  "ms": 0.2086249878630042,
+  "greedy": 0.7764705882352941,
+  "death": "collision"
+ }
+]

@@ -14,8 +14,13 @@ __pycache__/
 .ruff_cache/
 
 # Data and artifacts produced by the runs
-results/
+results/*
+# shipped: the trained Echo and the held-out results the page reports
+!results/heldout_crash.json
+!results/heldout_crash_echo.json
+!results/heldout_crash_tree.json
 *.npz
+!results/student_board_crash.npz
 
 # macOS
 .DS_Store
