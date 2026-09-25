@@ -9,7 +9,7 @@ function hint(text){$('arena-hint').textContent=text;$('arena-hint').style.opaci
 function score(){$('arena-score').textContent=game.score;rows($('arena-rows'),game.score)}
 const over=()=>arena.classList.contains('over');
 
-function fresh(){clearInterval(timer);timer=null;running=false;started=false;game=SnakeGame(0);nextMove=game.direction;arena.classList.remove('over');$('arena-end').hidden=true;draw(board);score();hint(TOUCH?'Swipe to start.':'Arrow keys or WASD to start.')}
+function fresh(){clearInterval(timer);timer=null;running=false;started=false;game=SnakeGame(0);nextMove=game.direction;arena.classList.remove('over');$('arena-end').hidden=true;draw(board);score();hint(TOUCH?'Swipe anywhere to start.':'Press an arrow key or WASD to start.')}
 function run(){started=true;hint('');if(!running){running=true;clearInterval(timer);timer=setInterval(tick,250)}}
 function pause(why){if(!running)return;running=false;clearInterval(timer);timer=null;hint(why)}
 function tick(){if(!running||!game.alive)return;game.step(nextMove);draw(board);score();if(!game.alive||game.steps>=LIMIT)finish()}
