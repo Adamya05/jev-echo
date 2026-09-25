@@ -55,7 +55,7 @@ See `TreeSearch` in `sysone/snake/search.py`.
 python3 -m http.server 8000 --directory docs
 ```
 
-Then open http://localhost:8000. The page is one self-contained file.
+Then open http://localhost:8000. The page is static: `docs/index.html` and `docs/landing-assets/`.
 
 ## Reproduce
 
@@ -97,7 +97,9 @@ uv run python -m sysone.snake.compare --games 20 --seed-offset 100 --max-steps 2
 uv run python record_replay.py      # the race on the page, under $0.01
 uv run python example_move.py       # the "How they play" position, one Jev call
 uv run python viz/build.py          # -> docs/race.html (the race replay; the front page is static)
-node viz/og.mjs                     # -> docs/og.png, the link preview
+# docs/og.png, the link preview, is the top of the front page at 1200x630:
+"/Applications/Google Chrome.app/Contents/MacOS/Google Chrome" --headless=new --window-size=1200,630 \
+    --screenshot=docs/og.png http://localhost:8000/
 node viz/video.mjs echo.mp4         # optional: a 15-second video of the race
 ```
 
@@ -112,9 +114,9 @@ node viz/video.mjs echo.mp4         # optional: a 15-second video of the race
 | `sysone/snake/compare.py` | paired comparisons on the same boards |
 | `sysone/core.py` | one `decide()` interface for Jev (TypeSafe or OpenRouter) and Laya |
 | `collect_raw.py`, `train_board.py` | Jev labels boards; Echo trains on them |
-| `record_replay.py`, `example_move.py` | the race and the example position on the page |
-| `viz/` | page template, build script, a JS port of Python's RNG so "Your turn" deals the same board, video and preview renderers |
-| `docs/` | the built page |
+| `record_replay.py`, `example_move.py` | the race replay (`docs/race.html`, not deployed) and the video's example position |
+| `viz/` | the race replay's template and build script, and `snake_core.js`, a JS port of Python's RNG so "Your turn" deals the same board (copied to `docs/landing-assets/`) |
+| `docs/` | the site: the front page, its assets, and the step-through search explainer |
 
 ## Earlier experiments
 
@@ -150,9 +152,11 @@ they can see one future pellet; only the tree and the flat search were fixed.
 - 20 boards is a small sample.
 - Jev's time per move varies between runs (about 160–230 ms), so the speed-up
   is anywhere from about 800× to 1,100×. The page uses the held-out run.
-- The replay and the example position are board 0, which the tree was tuned
-  on; the averages are not.
-- The page replays recordings made on an Apple M4. Nothing runs live.
+- The playable board's recorded scores are board 0, which the tree was tuned
+  on; the averages are not. The step-through explainer is board 9000, move 176,
+  chosen to illustrate a delayed trap.
+- Scores and timings on the page are recordings made on an Apple M4. Only the
+  playable board runs live, in your browser.
 
 ## Credits and reading
 
