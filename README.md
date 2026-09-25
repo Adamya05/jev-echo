@@ -6,7 +6,7 @@ Snake. It reads the same board Jev does and runs on a laptop CPU, about
 800× faster. Given a tree search, it scores about 5× what Jev does, still
 taking less time per move than Jev.
 
-**[Watch them race, then play the same board yourself →](https://adamya05.github.io/jev-echo/)**
+**[See the results, then play the same board yourself →](https://adamya05.github.io/jev-echo/)**
 
 ## Results
 
@@ -96,7 +96,7 @@ uv run python -m sysone.snake.compare --games 20 --seed-offset 100 --max-steps 2
     --configs jev_raw board_student board_tree_181 --save results/heldout_crash.json
 uv run python record_replay.py      # the race on the page, under $0.01
 uv run python example_move.py       # the "How they play" position, one Jev call
-uv run python viz/build.py          # -> docs/index.html
+uv run python viz/build.py          # -> docs/race.html (the race replay; the front page is static)
 node viz/og.mjs                     # -> docs/og.png, the link preview
 node viz/video.mjs echo.mp4         # optional: a 15-second video of the race
 ```

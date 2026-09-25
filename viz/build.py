@@ -1,4 +1,5 @@
-"""Build docs/index.html: the page, with the recordings inlined.
+"""Build docs/race.html: the three-board race replay, with the recordings inlined.
+(The site's front page, docs/index.html, is a static page and is not built here.)
 
     uv run python viz/build.py
 
@@ -82,5 +83,5 @@ out = (tpl.replace("/*__DATA__*/", json.dumps(D, separators=(",", ":")))
           .replace("__CALLS__", str(J["calls"])).replace("__HOURS__", f"{J['hours']:g}")
           .replace("__USD__", f"${J['usd']:.2f}"))
 pathlib.Path("docs").mkdir(exist_ok=True)
-pathlib.Path("docs/index.html").write_text(out)
+pathlib.Path("docs/race.html").write_text(out)
 print(f"page {len(out)/1024:.0f} KB")

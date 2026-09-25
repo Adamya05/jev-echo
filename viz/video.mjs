@@ -9,7 +9,7 @@ import { pathToFileURL } from "node:url";
 
 const OUT = resolve(process.argv[2] || "echo.mp4");
 const CHROME = "/Applications/Google Chrome.app/Contents/MacOS/Google Chrome";
-const PAGE = pathToFileURL(resolve("docs/index.html")).href + "?capture&theme=dark";
+const PAGE = pathToFileURL(resolve("docs/race.html")).href + "?capture&theme=dark";
 const W = 1280, H = 720, DPR = 1.5, FPS = 30;
 const OPEN_S = 4, HOLD_S = 3;              // 1x opening, then 5x, then hold on the card
 
