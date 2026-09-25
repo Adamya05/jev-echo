@@ -1,0 +1,278 @@
+WEBVTT
+
+1
+00:00:00.000 --> 00:00:03.338
+Here's a snake on a ten by ten board. It's eight
+
+2
+00:00:03.438 --> 00:00:07.207
+segments long, and there's a pellet over on the right.
+
+3
+00:00:07.300 --> 00:00:10.364
+It can't turn back on itself, so it
+
+4
+00:00:10.464 --> 00:00:13.620
+has three moves. Up, left, or right.
+
+5
+00:00:13.716 --> 00:00:18.786
+Jev, TypeSafe's System One model, sees the board as plain text.
+
+6
+00:00:18.883 --> 00:00:21.730
+It doesn't think out loud. In one pass,
+
+7
+00:00:21.830 --> 00:00:24.904
+it hands back a probability for each move.
+
+8
+00:00:25.000 --> 00:00:29.011
+Ninety-five percent: go right, toward the pellet. And that
+
+9
+00:00:29.111 --> 00:00:32.981
+one answer takes about a hundred and sixty milliseconds.
+
+10
+00:00:33.066 --> 00:00:37.900
+Echo is a far smaller network. Twenty-two thousand parameters,
+
+11
+00:00:38.000 --> 00:00:40.923
+small enough to run on a laptop's CPU.
+
+12
+00:00:41.016 --> 00:00:44.850
+It reads the same board, split into three grids: where the
+
+13
+00:00:44.950 --> 00:00:48.377
+body is, where the head is, and where the pellet is.
+
+14
+00:00:48.466 --> 00:00:53.707
+It learned by matching Jev's answers on about thirty-eight thousand boards. Not
+
+15
+00:00:53.807 --> 00:00:57.763
+just Jev's favorite move, but how sure it was of every move.
+
+16
+00:00:57.850 --> 00:01:02.323
+On this board it says right, ninety-two percent. And it answers
+
+17
+00:01:02.423 --> 00:01:06.824
+in a fifth of a millisecond. About eight hundred times faster.
+
+18
+00:01:06.924 --> 00:01:09.801
+Next to Jev's bar, you can barely see it.
+
+19
+00:01:09.900 --> 00:01:14.286
+So they agree. Here's what right actually does.
+
+20
+00:01:14.383 --> 00:01:18.775
+They're both confidently wrong. That's the snake's own body.
+
+21
+00:01:18.866 --> 00:01:22.501
+Echo copied Jev, blind spots included. Being eight
+
+22
+00:01:22.601 --> 00:01:26.162
+hundred times faster doesn't make it any smarter.
+
+23
+00:01:26.250 --> 00:01:29.421
+But speed buys something else. In the time
+
+24
+00:01:29.521 --> 00:01:32.927
+Jev gives one answer, Echo can give hundreds.
+
+25
+00:01:33.016 --> 00:01:36.152
+So we can leverage that. Echo plus search tries
+
+26
+00:01:36.252 --> 00:01:39.387
+each move, and looks at the board that follows.
+
+27
+00:01:40.283 --> 00:01:44.290
+Then every move from each of those, and every move after
+
+28
+00:01:44.390 --> 00:01:48.250
+that, seven moves deep. Echo scores a whole level in a
+
+29
+00:01:48.350 --> 00:01:51.991
+single batch. Red is a future where the snake died.
+
+30
+00:01:52.083 --> 00:01:57.364
+Three hundred sixty-three boards, seventy-seven milliseconds. Still
+
+31
+00:01:57.464 --> 00:01:59.935
+less time than Jev's one answer.
+
+32
+00:02:00.033 --> 00:02:04.233
+Now work backwards, from the bottom. A future where the snake
+
+33
+00:02:04.333 --> 00:02:08.111
+survives is worth the pellets it ate along the way. One
+
+34
+00:02:08.211 --> 00:02:11.777
+where it dies loses its whole score, plus a penalty.
+
+35
+00:02:11.866 --> 00:02:15.587
+Each node blends its children's values, leaning on the
+
+36
+00:02:15.687 --> 00:02:19.267
+moves Echo likes, unless those moves turn out badly.
+
+37
+00:02:19.366 --> 00:02:22.797
+Up at the top. Right had ninety-two percent of
+
+38
+00:02:22.897 --> 00:02:26.713
+Echo's vote. But its future is worth minus fifteen.
+
+39
+00:02:26.800 --> 00:02:29.823
+Weight each move by P, times e to the
+
+40
+00:02:29.923 --> 00:02:33.960
+v. Minus fifteen shrinks right to almost nothing.
+
+41
+00:02:34.050 --> 00:02:37.876
+Up and left both survive, so their values tie, and the
+
+42
+00:02:37.976 --> 00:02:42.384
+search just keeps Echo's preference between them. It plays up.
+
+43
+00:02:42.483 --> 00:02:45.975
+That's the whole rule, at every node. Echo's
+
+44
+00:02:46.075 --> 00:02:49.485
+intuition, reweighted by what the tree saw.
+
+45
+00:02:49.583 --> 00:02:54.018
+So the snake goes up, around its own body, and gets the pellet.
+
+46
+00:02:57.216 --> 00:03:00.363
+That danger was one step away. A simple rule
+
+47
+00:03:00.463 --> 00:03:03.683
+would have caught it. Here's one it wouldn't.
+
+48
+00:03:03.783 --> 00:03:07.939
+Later in the same game, the pellet is right below the head.
+
+49
+00:03:08.033 --> 00:03:11.037
+Jev never made it this far. Its own game on
+
+50
+00:03:11.137 --> 00:03:15.079
+this board crashed at move thirty-four. But we can still
+
+51
+00:03:15.179 --> 00:03:18.905
+ask it about this position. Down, ninety-six percent.
+
+52
+00:03:19.000 --> 00:03:23.267
+Echo agrees. Ninety-seven percent. Take it.
+
+53
+00:03:23.366 --> 00:03:25.929
+Taking it is perfectly safe, for one
+
+54
+00:03:26.029 --> 00:03:28.741
+move. Follow it down the tree, though.
+
+55
+00:03:28.833 --> 00:03:31.949
+One line survives each level, then none. By
+
+56
+00:03:32.049 --> 00:03:35.315
+the fifth move, every future that starts with
+
+57
+00:03:35.415 --> 00:03:39.130
+down is dead. Going right, though, keeps branching.
+
+58
+00:03:39.216 --> 00:03:42.583
+So all of the search's weight goes right.
+
+59
+00:03:43.016 --> 00:03:46.071
+Here's why. The pellet sits at the mouth of a
+
+60
+00:03:46.171 --> 00:03:49.155
+dead end, walled in by the snake's own body.
+
+61
+00:03:49.250 --> 00:03:54.176
+Echo on its own takes the pellet, and crashes on the very next move.
+
+62
+00:03:54.266 --> 00:03:59.349
+The search goes right first. In those two moves, the tail pulls out of the
+
+63
+00:03:59.449 --> 00:04:03.902
+way. Then it takes the same pellet, and the dead end has an exit.
+
+64
+00:04:04.500 --> 00:04:09.382
+Over twenty boards that no training ever touched, Jev averaged seven
+
+65
+00:04:09.482 --> 00:04:12.899
+and a half pellets a game. Echo, about the same.
+
+66
+00:04:12.983 --> 00:04:17.191
+Echo plus search averaged thirty-nine, beat Jev on all twenty
+
+67
+00:04:17.291 --> 00:04:20.792
+boards, and still took less time per move than Jev.
+
+68
+00:04:20.883 --> 00:04:24.555
+So Echo didn't get better judgment than Jev. It got cheap
+
+69
+00:04:24.655 --> 00:04:27.997
+enough to look several moves ahead in the same time.
+
