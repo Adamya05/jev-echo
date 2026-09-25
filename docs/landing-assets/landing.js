@@ -13,11 +13,11 @@ function fresh(){clearInterval(timer);timer=null;running=false;started=false;gam
 function run(){started=true;hint('');if(!running){running=true;clearInterval(timer);timer=setInterval(tick,250)}}
 function pause(why){if(!running)return;running=false;clearInterval(timer);timer=null;hint(why)}
 function tick(){if(!running||!game.alive)return;game.step(nextMove);draw(board);score();if(!game.alive||game.steps>=LIMIT)finish()}
-function finish(){running=false;clearInterval(timer);timer=null;best=best===null?game.score:Math.max(best,game.score);$('arena-end-title').textContent=(game.alive?'Move limit reached.':'Game over.')+` You scored ${game.score}.`;rows($('arena-end-rows'),game.score);arena.classList.add('over');$('arena-end').hidden=false;$('arena-again').focus({preventScroll:true})}
+function finish(){running=false;clearInterval(timer);timer=null;best=best===null?game.score:Math.max(best,game.score);$('arena-end-title').textContent=game.alive?'Move limit reached.':'Game over.';$('arena-end-score').textContent=game.score;rows($('arena-end-rows'),game.score);arena.classList.add('over');$('arena-end').hidden=false;$('arena-again').focus({preventScroll:true})}
 function move(dir){if(!open||over())return;if(!running)run();if(dir===OPP[game.direction])return;nextMove=dir}
 
 function show(){open=true;arena.hidden=false;document.body.classList.add('arena-open');if(!pushed){history.pushState({arena:1},'');pushed=true}fresh();$('arena-exit').focus({preventScroll:true})}
-function hide(viaHistory){if(!open)return;open=false;clearInterval(timer);timer=null;running=false;arena.hidden=true;document.body.classList.remove('arena-open');if(best!==null){$('last-score').textContent=`You: ${best}`;$('your-best').textContent=best;$('your-best-row').hidden=false;$('play-button').innerHTML='Play again <span>▶</span>'}$('play-button').focus({preventScroll:true});if(pushed&&!viaHistory){pushed=false;history.back()}else pushed=false}
+function hide(viaHistory){if(!open)return;open=false;clearInterval(timer);timer=null;running=false;arena.hidden=true;document.body.classList.remove('arena-open');if(best!==null){$('last-score').textContent=`You, best · ${best}`;$('your-best').textContent=best;$('your-best-row').hidden=false;$('play-button').innerHTML='Play again <span>→</span>'}$('play-button').focus({preventScroll:true});if(pushed&&!viaHistory){pushed=false;history.back()}else pushed=false}
 
 $('play-button').addEventListener('click',show);$('arena-again').addEventListener('click',fresh);$('arena-exit').addEventListener('click',()=>hide(false));$('arena-exit-2').addEventListener('click',()=>hide(false));
 window.addEventListener('popstate',()=>{if(open)hide(true)});
